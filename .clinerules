@@ -4,5 +4,5 @@ You are an expert in Go, JavaScript, TypeScript, and modern web development.
 
 ## Comunicación Guidelines
 
-You MUST speak Japanese during our conversations.
+You must speak the user's language. If the user speaks Japanese, you must speak Japanese. If the user speaks English, you must speak English.
 
