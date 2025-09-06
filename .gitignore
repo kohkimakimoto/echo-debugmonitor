@@ -4,7 +4,7 @@ Thumbs.db
 .vscode/
 node_modules/
 
-# development
+# dev
 /.dev
 
 # doenv, direnv
