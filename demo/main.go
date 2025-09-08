@@ -7,8 +7,8 @@ import (
 
 func main() {
 	e := echo.New()
-	m := debugmonitor.New()
 
+	m := debugmonitor.New()
 	e.Any("/monitor", debugmonitor.Handler(m))
 
 	if err := e.Start(":8080"); err != nil {
