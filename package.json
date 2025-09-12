@@ -1,0 +1,22 @@
+{
+  "name": "echo-debugmonitor",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite --clearScreen=false",
+    "build": "vite build",
+    "clean": "rm -rf public/build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kohkimakimoto/echo-debugmonitor.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kohkimakimoto/echo-debugmonitor/issues"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.9",
+    "vite": "^7.1.5"
+  }
+}

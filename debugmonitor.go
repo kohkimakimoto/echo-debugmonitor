@@ -9,6 +9,7 @@ import (
 
 type DebugMonitor struct {
 	watchers []*Watcher
+	DBPath   string
 }
 
 func New() *DebugMonitor {
