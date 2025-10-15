@@ -3,7 +3,7 @@ module github.com/kohkimakimoto/echo-debugmonitor
 go 1.23.0
 
 require (
-	github.com/kohkimakimoto/echo-viewkit v0.6.0
+	github.com/kohkimakimoto/echo-viewkit v0.8.0
 	github.com/labstack/echo/v4 v4.13.4
 )
 
@@ -16,8 +16,8 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 )
