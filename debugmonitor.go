@@ -2,14 +2,14 @@ package debugmonitor
 
 import (
 	"embed"
+	"net/http"
+
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/labstack/echo/v4"
-	"net/http"
 )
 
 type DebugMonitor struct {
 	watchers []*Watcher
-	DBPath   string
 }
 
 func New() *DebugMonitor {

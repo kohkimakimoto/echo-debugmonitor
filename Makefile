@@ -75,3 +75,10 @@ go-generate: ## Run go generate
 go-mod-tidy: ## Run go mod tidy
 	@go mod tidy
 
+
+# --------------------------------------------------------------------------------------
+# Demo application
+# --------------------------------------------------------------------------------------
+.PHONY: demo-run
+demo-run: ## Run demo application
+	@cd demo && go run .
