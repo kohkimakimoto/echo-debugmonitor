@@ -10,9 +10,17 @@ export default defineConfig({
   ],
   build: {
     manifest: "manifest.json",
-    outDir: "public/build",
+    outDir: "resources/public/build",
     rollupOptions: {
-      input: ['assets/app.js'],
+      input: ['resources/assets/app.js'],
+      onwarn(warning, warn) {
+        // Suppress eval warnings from htmx
+        if (warning.code === 'EVAL') {
+          return;
+        }
+        // Pass other warnings to the default handler
+        warn(warning);
+      }
     },
   },
 });

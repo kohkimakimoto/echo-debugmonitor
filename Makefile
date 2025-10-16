@@ -81,4 +81,6 @@ go-mod-tidy: ## Run go mod tidy
 # --------------------------------------------------------------------------------------
 .PHONY: demo
 demo: ## Run demo application
-	@go run -C ./demo -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.dev=true -X github.com/kohkimakimoto/echo-debugmonitor.devPublicDir=../public -X github.com/kohkimakimoto/echo-debugmonitor.devViewsDir=../views" .
+	# need to build first because this module uses embed package even if these files are not used in the demo application.
+	@npm run build
+	@go run -C ./demo -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.dev=true -X github.com/kohkimakimoto/echo-debugmonitor.devPublicDir=../resources/public -X github.com/kohkimakimoto/echo-debugmonitor.devViewsDir=../resources/views" .

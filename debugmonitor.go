@@ -31,17 +31,12 @@ func Handler(m *DebugMonitor) echo.HandlerFunc {
 	v.PreProcessors = []pongo2.PreProcessor{
 		pongo2.MustNewRegexRemove(`(?i)(?s)<style[^>]*\bdata-extract\b[^>]*>.*?</style>`, `(?i)(?s)<script[^>]*\bdata-extract\b[^>]*>.*?</script>`),
 	}
-
-	// In development mode, don't cache templates
-	if isDev() {
-		return func(c echo.Context) error {
-			r := v.MustRenderer()
-			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{})
-		}
-	}
-
-	// In production mode, create and cache the renderer only once
+	v.Vite = true
+	v.ViteManifest = viewkit.MustParseViteManifestFS(publicFS, "build/manifest.json")
+	v.ViteBasePath = "/build"
+	
 	r := v.MustRenderer()
+
 	return func(c echo.Context) error {
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{})
 	}

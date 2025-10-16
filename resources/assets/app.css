@@ -1,0 +1,6 @@
+@import 'nprogress/nprogress.css';
+@import "tailwindcss";
+@import './toastify.css';
+@source "../views";
+
+[x-cloak] { display: none !important; }

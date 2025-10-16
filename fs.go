@@ -9,10 +9,10 @@ import (
 )
 
 var (
-	//go:embed public
+	//go:embed resources/public
 	ePublicFS embed.FS
 
-	//go:embed views
+	//go:embed resources/views
 	eViewsFS embed.FS
 
 	publicFS fs.FS
