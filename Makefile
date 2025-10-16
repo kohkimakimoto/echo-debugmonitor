@@ -79,6 +79,6 @@ go-mod-tidy: ## Run go mod tidy
 # --------------------------------------------------------------------------------------
 # Demo application
 # --------------------------------------------------------------------------------------
-.PHONY: demo-run
-demo-run: ## Run demo application
-	@cd demo && go run -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.debug=true" .
+.PHONY: demo
+demo: ## Run demo application
+	@go run -C ./demo -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.dev=true -X github.com/kohkimakimoto/echo-debugmonitor.devPublicDir=../public -X github.com/kohkimakimoto/echo-debugmonitor.devViewsDir=../views" .

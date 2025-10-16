@@ -20,10 +20,10 @@ var (
 )
 
 func init() {
-	if isDebug() {
-		// In debug mode, read directly from the file system
-		publicFS = os.DirFS("../public")
-		viewsFS = os.DirFS("../views")
+	if isDev() {
+		// In development mode, read directly from the file system
+		publicFS = os.DirFS(getDevPublicDir())
+		viewsFS = os.DirFS(getDevViewsDir())
 	} else {
 		// In production mode, use the embedded file system
 		publicFS = echo.MustSubFS(ePublicFS, "public")
