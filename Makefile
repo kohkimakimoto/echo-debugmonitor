@@ -81,4 +81,4 @@ go-mod-tidy: ## Run go mod tidy
 # --------------------------------------------------------------------------------------
 .PHONY: demo-run
 demo-run: ## Run demo application
-	@cd demo && go run .
+	@cd demo && go run -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.debug=true" .
