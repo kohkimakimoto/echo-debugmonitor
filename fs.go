@@ -21,11 +21,11 @@ var (
 
 func init() {
 	if isDebug() {
-		// デバッグモードの場合は、ファイルシステムから直接読み込む
-		publicFS = os.DirFS("public")
-		viewsFS = os.DirFS("views")
+		// In debug mode, read directly from the file system
+		publicFS = os.DirFS("../public")
+		viewsFS = os.DirFS("../views")
 	} else {
-		// 本番モードの場合は、埋め込まれたファイルシステムを使用
+		// In production mode, use the embedded file system
 		publicFS = echo.MustSubFS(ePublicFS, "public")
 		viewsFS = echo.MustSubFS(eViewsFS, "views")
 	}

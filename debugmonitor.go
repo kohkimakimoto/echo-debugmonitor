@@ -8,6 +8,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// debug is a debug flag that can be set via ldflags at build time
+// Can be set with -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.debug=true"
+var debug string
+
+// isDebug returns whether debug mode is enabled
+func isDebug() bool {
+	return debug == "true"
+}
+
 type DebugMonitor struct {
 	watchers []*Watcher
 }
@@ -24,7 +33,7 @@ func Handler(m *DebugMonitor) echo.HandlerFunc {
 	v := viewkit.New()
 
 	v.FS = viewsFS
-	v.FSBaseDir = "views"
+	v.Debug = isDebug()
 	v.AnonymousComponentsDirectories = []*pongo2.AnonymousComponentsDirectory{
 		{Dir: "components"},
 	}
@@ -32,7 +41,7 @@ func Handler(m *DebugMonitor) echo.HandlerFunc {
 		pongo2.MustNewRegexRemove(`(?i)(?s)<style[^>]*\bdata-extract\b[^>]*>.*?</style>`, `(?i)(?s)<script[^>]*\bdata-extract\b[^>]*>.*?</script>`),
 	}
 
-	// デバッグモードの場合は、テンプレートをキャッシュしない
+	// In debug mode, don't cache templates
 	if isDebug() {
 		return func(c echo.Context) error {
 			r := v.MustRenderer()
@@ -40,7 +49,7 @@ func Handler(m *DebugMonitor) echo.HandlerFunc {
 		}
 	}
 
-	// 本番モードの場合は、レンダラーを一度だけ作成してキャッシュする
+	// In production mode, create and cache the renderer only once
 	r := v.MustRenderer()
 	return func(c echo.Context) error {
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{})
