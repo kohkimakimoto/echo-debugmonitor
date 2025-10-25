@@ -25,7 +25,6 @@ func (m *DebugMonitor) Handler() echo.HandlerFunc {
 	v := viewkit.New()
 
 	v.FS = viewsFS
-	v.Debug = isDev()
 	v.AnonymousComponentsDirectories = []*pongo2.AnonymousComponentsDirectory{
 		{Dir: "components"},
 	}

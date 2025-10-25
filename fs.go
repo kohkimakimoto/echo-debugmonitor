@@ -2,31 +2,16 @@ package debugmonitor
 
 import (
 	"embed"
-	"io/fs"
-	"os"
 
 	"github.com/labstack/echo/v4"
 )
 
 var (
 	//go:embed resources/public
-	ePublicFS embed.FS
+	_publicFS embed.FS
+	publicFS  = echo.MustSubFS(_publicFS, "resources/public")
 
 	//go:embed resources/views
 	eViewsFS embed.FS
-
-	publicFS fs.FS
-	viewsFS  fs.FS
+	viewsFS  = echo.MustSubFS(eViewsFS, "resources/views")
 )
-
-func init() {
-	if isDev() {
-		// In development mode, read directly from the file system
-		publicFS = os.DirFS(getDevPublicDir())
-		viewsFS = os.DirFS(getDevViewsDir())
-	} else {
-		// In production mode, use the embedded file system
-		publicFS = echo.MustSubFS(ePublicFS, "public")
-		viewsFS = echo.MustSubFS(eViewsFS, "views")
-	}
-}
