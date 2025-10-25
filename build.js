@@ -1,28 +1,30 @@
 const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 async function build() {
   // Create output directory if it doesn't exist
-  const outdir = path.join(__dirname, 'public/build');
+  const outdir = path.join(__dirname, 'resources/public');
   if (!fs.existsSync(outdir)) {
     fs.mkdirSync(outdir, { recursive: true });
   }
 
   try {
-    // Build CSS and JS files with esbuild
+    // Process CSS with TailwindCSS CLI
+    console.log('Building CSS with TailwindCSS...');
+    execSync(
+      'npx tailwindcss -i resources/assets/app.css -o resources/public/app.css --minify',
+      { stdio: 'inherit' }
+    );
+
+    // Build JS file with esbuild
+    console.log('Building JavaScript...');
     await esbuild.build({
-      entryPoints: [
-        'resources/assets/app.css',
-        'resources/assets/app.js'
-      ],
+      entryPoints: ['resources/assets/app.js'],
       bundle: true,
       outdir: 'resources/public',
       minify: true,
-      conditions: ['style'],
-      loader: {
-        '.css': 'css',
-      },
     });
 
     console.log('✓ Build completed successfully');
