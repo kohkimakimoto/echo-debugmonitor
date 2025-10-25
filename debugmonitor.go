@@ -28,13 +28,7 @@ func Handler(m *DebugMonitor) echo.HandlerFunc {
 	v.AnonymousComponentsDirectories = []*pongo2.AnonymousComponentsDirectory{
 		{Dir: "components"},
 	}
-	v.PreProcessors = []pongo2.PreProcessor{
-		pongo2.MustNewRegexRemove(`(?i)(?s)<style[^>]*\bdata-extract\b[^>]*>.*?</style>`, `(?i)(?s)<script[^>]*\bdata-extract\b[^>]*>.*?</script>`),
-	}
-	v.Vite = true
-	v.ViteManifest = viewkit.MustParseViteManifestFS(publicFS, "build/manifest.json")
-	v.ViteBasePath = "/build"
-	
+
 	r := v.MustRenderer()
 
 	return func(c echo.Context) error {
