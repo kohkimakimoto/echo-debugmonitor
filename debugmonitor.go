@@ -34,7 +34,7 @@ func (m *DebugMonitor) Handler() echo.HandlerFunc {
 		// Check if a file query parameter is present
 		file := c.QueryParam("file")
 		if file != "" {
-			// Serve the requested file from publicFS
+			// Serve the requested file from assetsFS
 			return serveStaticFile(c, file)
 		}
 
@@ -42,7 +42,7 @@ func (m *DebugMonitor) Handler() echo.HandlerFunc {
 	}
 }
 
-// serveStaticFile serves static files (app.js or app.css) from publicFS
+// serveStaticFile serves static files (app.js or app.css) from assetsFS
 func serveStaticFile(c echo.Context, filename string) error {
 	var contentType string
 
@@ -55,8 +55,8 @@ func serveStaticFile(c echo.Context, filename string) error {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
 
-	// Open the file from publicFS
-	f, err := publicFS.Open(filename)
+	// Open the file from assetsFS
+	f, err := assetsFS.Open(filename)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound)
 	}

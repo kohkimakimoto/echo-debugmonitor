@@ -24,7 +24,7 @@ async function build() {
       entryPoints: ['resources/assets/app.js'],
       bundle: true,
       target: 'es2020',
-      outdir: 'resources/build',
+      outdir: 'resources/build/assets',
       minify: true,
     });
 
