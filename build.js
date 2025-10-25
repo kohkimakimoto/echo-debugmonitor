@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 
 async function build() {
   // Create output directory if it doesn't exist
-  const outdir = path.join(__dirname, 'resources/build');
+  const outdir = path.join(__dirname, 'resources/build/assets');
   if (!fs.existsSync(outdir)) {
     fs.mkdirSync(outdir, { recursive: true });
   }
@@ -14,7 +14,7 @@ async function build() {
     // Process CSS with TailwindCSS CLI
     console.log('Building CSS with TailwindCSS...');
     execSync(
-      'npx tailwindcss -i resources/assets/app.css -o resources/public/app.css --minify',
+      'npx tailwindcss -i resources/assets/app.css -o resources/build/assets/app.css --minify',
       { stdio: 'inherit' }
     );
 
