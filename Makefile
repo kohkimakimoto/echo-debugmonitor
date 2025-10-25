@@ -81,4 +81,5 @@ go-mod-tidy: ## Run go mod tidy
 # --------------------------------------------------------------------------------------
 .PHONY: demo
 demo: ## Run demo application
+	@npm run build
 	@go run -C ./demo -ldflags="-X github.com/kohkimakimoto/echo-debugmonitor.dev=true -X github.com/kohkimakimoto/echo-debugmonitor.devPublicDir=../resources/public -X github.com/kohkimakimoto/echo-debugmonitor.devViewsDir=../resources/views" .

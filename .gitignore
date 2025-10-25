@@ -3,7 +3,6 @@ Thumbs.db
 .idea/
 .vscode/
 node_modules/
-/public/build
 
 # dev
 /.dev
