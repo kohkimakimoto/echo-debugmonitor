@@ -5,7 +5,7 @@ const { execSync } = require('child_process');
 
 async function build() {
   // Create output directory if it doesn't exist
-  const outdir = path.join(__dirname, 'resources/public');
+  const outdir = path.join(__dirname, 'resources/build');
   if (!fs.existsSync(outdir)) {
     fs.mkdirSync(outdir, { recursive: true });
   }
