@@ -4,6 +4,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const { processCssExtraction, processScriptExtraction, processHtmlFile, cleanTempFiles } = require('./resources/extension/compile-sfc');
 const { glob } = require('glob');
+const { minify } = require('html-minifier-next');
 
 async function build() {
   // Create output directories if they don't exist
@@ -54,7 +55,7 @@ async function build() {
     // Process templates
     console.log('Processing HTML templates...');
     const htmlFiles = glob.sync('resources/views/**/*.html');
-    htmlFiles.forEach(htmlFile => {
+    for (const htmlFile of htmlFiles) {
       const relativePath = path.relative('resources/views', htmlFile);
       const outputPath = path.join('resources/build/views', relativePath);
       const outputDir = path.dirname(outputPath);
@@ -65,7 +66,17 @@ async function build() {
       }
 
       processHtmlFile(htmlFile, outputPath, 'resources/views');
-    });
+
+      // Minify the processed HTML file
+      const htmlContent = fs.readFileSync(outputPath, 'utf8');
+      const minifiedHtml = await minify(htmlContent, {
+        collapseWhitespace: true,
+        removeComments: true,
+        minifyCSS: true,
+        minifyJS: true,
+      });
+      fs.writeFileSync(outputPath, minifiedHtml);
+    }
 
     console.log('✓ Build completed successfully');
   } catch (error) {

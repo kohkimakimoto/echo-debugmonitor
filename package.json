@@ -10,6 +10,7 @@
     "alpinejs": "^3.15.0",
     "esbuild": "^0.25.11",
     "glob": "^11.0.0",
+    "html-minifier-next": "^3.0.0",
     "htmx.org": "^2.0.7",
     "nprogress": "^0.2.0",
     "tailwindcss": "^4.1.16",
