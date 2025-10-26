@@ -2,13 +2,19 @@ const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
-const { processCssExtraction, cleanTempFiles } = require('./resources/extension/compile-sfc');
+const { processCssExtraction, processScriptExtraction, processHtmlFile, cleanTempFiles } = require('./resources/extension/compile-sfc');
+const { glob } = require('glob');
 
 async function build() {
-  // Create output directory if it doesn't exist
-  const outdir = path.join(__dirname, 'resources/build/assets');
-  if (!fs.existsSync(outdir)) {
-    fs.mkdirSync(outdir, { recursive: true });
+  // Create output directories if they don't exist
+  const assetsOutdir = path.join(__dirname, 'resources/build/assets');
+  const viewsOutdir = path.join(__dirname, 'resources/build/views');
+
+  if (!fs.existsSync(assetsOutdir)) {
+    fs.mkdirSync(assetsOutdir, { recursive: true });
+  }
+  if (!fs.existsSync(viewsOutdir)) {
+    fs.mkdirSync(viewsOutdir, { recursive: true });
   }
 
   try {
@@ -27,14 +33,38 @@ async function build() {
       { stdio: 'inherit' }
     );
 
+    // Process SFC JS extraction
+    console.log('Extracting SFC JavaScript...');
+    processScriptExtraction(
+      'resources/assets/app.js',
+      'resources/assets/app.temp.js',
+      'resources/views',
+    );
+
     // Build JS file with esbuild
     console.log('Building JavaScript...');
     await esbuild.build({
-      entryPoints: ['resources/assets/app.js'],
+      entryPoints: ['resources/assets/app.temp.js'],
       bundle: true,
       target: 'es2020',
-      outdir: 'resources/build/assets',
+      outfile: 'resources/build/assets/app.js',
       minify: true,
+    });
+
+    // Process templates
+    console.log('Processing HTML templates...');
+    const htmlFiles = glob.sync('resources/views/**/*.html');
+    htmlFiles.forEach(htmlFile => {
+      const relativePath = path.relative('resources/views', htmlFile);
+      const outputPath = path.join('resources/build/views', relativePath);
+      const outputDir = path.dirname(outputPath);
+
+      // Create subdirectories if needed
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      processHtmlFile(htmlFile, outputPath, 'resources/views');
     });
 
     console.log('✓ Build completed successfully');

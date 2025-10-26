@@ -1,8 +1,21 @@
-<div class="container">
+<div class="container" x-data="testComponent">
   <h1 class="title">Test SFC Component</h1>
-  <p class="description">This is a test template for SFC CSS extraction</p>
-  <button class="btn">Click Me</button>
+  <p class="description">This is a test template for SFC CSS and JS extraction</p>
+  <p class="counter" x-text="`Count: ${count}`"></p>
+  <button class="btn" @click="increment">Click Me</button>
 </div>
+
+<script extract>
+  import { $data } from '../extension/sfc.js';
+
+  const testComponent = $data(() => ({
+    count: 0,
+    increment() {
+      this.count++;
+      console.log('Count incremented:', this.count);
+    }
+  }));
+</script>
 
 <style extract>
 .container {

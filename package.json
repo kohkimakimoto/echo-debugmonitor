@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "node build.js",
-    "clean": "rm -rf resources/public/*"
+    "clean": "rm -rf resources/build/*"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.16",
