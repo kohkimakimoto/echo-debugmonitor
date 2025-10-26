@@ -1,5 +1,6 @@
 @import 'nprogress/nprogress.css';
 @import "tailwindcss";
 @source "../views";
+@import 'extract-sfc-css:../views/**/*.html';
 
 [x-cloak] { display: none !important; }
