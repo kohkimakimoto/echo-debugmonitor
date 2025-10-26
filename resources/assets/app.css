@@ -1,5 +1,6 @@
 @import 'nprogress/nprogress.css';
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @source "../views";
 @import 'extract-sfc-css:../views/**/*.html';
 
