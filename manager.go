@@ -38,7 +38,8 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			// Serve the requested file from assetsFS
 			return serveStaticFile(c, file)
 		}
-		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
+
+		return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{
 			"manager": m,
 		})
 	}
