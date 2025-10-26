@@ -70,9 +70,12 @@ async function build() {
       // Minify the processed HTML file
       const htmlContent = fs.readFileSync(outputPath, 'utf8');
       const minifiedHtml = await minify(htmlContent, {
+        caseSensitive: true,
         collapseWhitespace: true,
-        removeComments: true,
+        ignoreCustomFragments: [/{{[\s\S]*?}}/, /{%[\s\S]*?%}/, /{#[\s\S]*?#}/],
+        keepClosingSlash: true,
         minifyCSS: true,
+        removeComments: true,
         minifyJS: true,
       });
       fs.writeFileSync(outputPath, minifiedHtml);
