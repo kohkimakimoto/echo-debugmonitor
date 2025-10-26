@@ -10,12 +10,16 @@ import (
 )
 
 type Manager struct {
-	monitors []*Monitor
+	monitors   []*Monitor
+	monitorMap map[string]*Monitor
 }
 
 // New creates a new Echo Debug Monitor manager instance.
 func New() *Manager {
-	return &Manager{}
+	return &Manager{
+		monitors:   []*Monitor{},
+		monitorMap: make(map[string]*Monitor),
+	}
 }
 
 func (m *Manager) AddMonitor(w *Monitor) {
