@@ -7,11 +7,9 @@ import (
 )
 
 var (
-	//go:embed resources/build/assets
-	_assetsFS embed.FS
-	assetsFS  = echo.MustSubFS(_assetsFS, "resources/build/assets")
+	//go:embed resources/build
+	_buildFS embed.FS
 
-	//go:embed resources/build/views
-	eViewsFS embed.FS
-	viewsFS  = echo.MustSubFS(eViewsFS, "resources/build/views")
+	assetsFS = echo.MustSubFS(_buildFS, "resources/build/assets")
+	viewsFS  = echo.MustSubFS(_buildFS, "resources/build/views")
 )
