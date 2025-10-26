@@ -11,7 +11,7 @@ var (
 	_assetsFS embed.FS
 	assetsFS  = echo.MustSubFS(_assetsFS, "resources/build/assets")
 
-	//go:embed resources/views
+	//go:embed resources/build/views
 	eViewsFS embed.FS
-	viewsFS  = echo.MustSubFS(eViewsFS, "resources/views")
+	viewsFS  = echo.MustSubFS(eViewsFS, "resources/build/views")
 )
