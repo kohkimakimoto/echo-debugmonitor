@@ -9,19 +9,20 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type DebugMonitor struct {
-	watchers []*Watcher
+type Manager struct {
+	monitors []*Monitor
 }
 
-func New() *DebugMonitor {
-	return &DebugMonitor{}
+// New creates a new Echo Debug Monitor manager instance.
+func New() *Manager {
+	return &Manager{}
 }
 
-func (m *DebugMonitor) AddWatcher(w *Watcher) {
-	m.watchers = append(m.watchers, w)
+func (m *Manager) AddMonitor(w *Monitor) {
+	m.monitors = append(m.monitors, w)
 }
 
-func (m *DebugMonitor) Handler() echo.HandlerFunc {
+func (m *Manager) Handler() echo.HandlerFunc {
 	v := viewkit.New()
 
 	v.FS = viewsFS

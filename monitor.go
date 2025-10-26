@@ -1,5 +1,5 @@
 package debugmonitor
 
-type Watcher struct {
+type Monitor struct {
 	Name string
 }
