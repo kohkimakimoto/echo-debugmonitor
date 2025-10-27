@@ -105,8 +105,7 @@ function transformCssWithScope(cssContent, scopeKey) {
  * Process CSS extraction from HTML templates
  * Finds @import 'extract-sfc-css:pattern' and replaces it with imports to generated temp files
  */
-function processCssExtraction(inputFile, outputFile, baseDir) {
-  const rootDir = process.cwd();
+function processCssExtraction(inputFile, outputFile) {
   const content = fs.readFileSync(inputFile, 'utf8');
 
   // Find extract-sfc-css: pseudo-import statements
@@ -127,9 +126,8 @@ function processCssExtraction(inputFile, outputFile, baseDir) {
       const styleMatch = extractPattern.exec(htmlContent);
 
       if (styleMatch && styleMatch[1].trim()) {
-        // Automatically generate namespace from file path
-        const resolvedBaseDir = path.resolve(rootDir, baseDir);
-        const namespace = path.relative(resolvedBaseDir, htmlFile);
+        // Generate namespace from absolute file path
+        const namespace = path.resolve(htmlFile);
         const scopeKey = generateScopeKey(namespace);
 
         // Transform CSS with scope class
@@ -163,8 +161,7 @@ function processCssExtraction(inputFile, outputFile, baseDir) {
  * Process JS extraction from HTML templates
  * Finds import 'extract-sfc-script:pattern' and replaces it with imports to generated temp files
  */
-function processScriptExtraction(inputFile, outputFile, baseDir) {
-  const rootDir = process.cwd();
+function processScriptExtraction(inputFile, outputFile) {
   const content = fs.readFileSync(inputFile, 'utf8');
 
   // Find extract-sfc-script: pseudo-import statements
@@ -187,9 +184,8 @@ function processScriptExtraction(inputFile, outputFile, baseDir) {
       if (scriptMatch && scriptMatch[1].trim()) {
         const extractedScript = scriptMatch[1].trim();
 
-        // Automatically generate namespace from file path
-        const resolvedBaseDir = path.resolve(rootDir, baseDir);
-        const namespace = path.relative(resolvedBaseDir, htmlFile);
+        // Generate namespace from absolute file path
+        const namespace = path.resolve(htmlFile);
         const scopeKey = generateScopeKey(namespace);
 
         // Transform $data() to Alpine.data()
@@ -267,12 +263,9 @@ function addScopeClassToAttributes(content, scopeKey) {
  * Process HTML files
  * Remove <style extract> and <script extract> tags, and transform class and x-data attributes
  */
-function processHtmlFile(inputFile, outputFile, baseDir) {
-  const rootDir = process.cwd();
-
-  // Generate namespace from file path
-  const resolvedBaseDir = path.resolve(rootDir, baseDir);
-  const namespace = path.relative(resolvedBaseDir, inputFile);
+function processHtmlFile(inputFile, outputFile) {
+  // Generate namespace from absolute file path
+  const namespace = path.resolve(inputFile);
   const scopeKey = generateScopeKey(namespace);
 
   // Get template content

@@ -23,8 +23,7 @@ async function build() {
     console.log('Extracting SFC CSS...');
     processCssExtraction(
       'resources/assets/app.css',
-      'resources/assets/app.temp.css',
-      'resources/views',
+      'resources/assets/app.temp.css'
     );
 
     // Process CSS with TailwindCSS CLI
@@ -38,8 +37,7 @@ async function build() {
     console.log('Extracting SFC JavaScript...');
     processScriptExtraction(
       'resources/assets/app.js',
-      'resources/assets/app.temp.js',
-      'resources/views',
+      'resources/assets/app.temp.js'
     );
 
     // Build JS file with esbuild
@@ -65,7 +63,7 @@ async function build() {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      processHtmlFile(htmlFile, outputPath, 'resources/views');
+      processHtmlFile(htmlFile, outputPath);
 
       // Minify the processed HTML file
       const htmlContent = fs.readFileSync(outputPath, 'utf8');
