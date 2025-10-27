@@ -23,7 +23,27 @@ func New() *Manager {
 }
 
 func (m *Manager) AddMonitor(w *Monitor) {
+	// Initialize the channel for this monitor
+	// Using a buffered channel with size based on ChannelBufferSize
+	bufferSize := w.ChannelBufferSize
+	if bufferSize <= 0 {
+		bufferSize = 100 // Default buffer size
+	}
+	w.dataChan = make(chan any, bufferSize)
+
+	// Start a goroutine to receive data from the monitor
+	go m.receiveData(w)
+
 	m.monitors = append(m.monitors, w)
+}
+
+// receiveData is a goroutine that receives data from a monitor's channel
+func (m *Manager) receiveData(monitor *Monitor) {
+	for data := range monitor.dataChan {
+		// TODO: Store data in memory buffer
+		// For now, just receive it to prevent channel blocking
+		_ = data
+	}
 }
 
 func (m *Manager) Handler() echo.HandlerFunc {
