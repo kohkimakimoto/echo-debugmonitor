@@ -71,17 +71,18 @@ func (m *Manager) Handler() echo.HandlerFunc {
 
 // serveStaticFile serves static files (app.js or app.css) from assetsFS
 func serveStaticFile(c echo.Context, filename string) error {
-	var contentType string
-
 	switch filename {
 	case "app.js":
-		contentType = "application/javascript"
+		return serveAsset(c, "app.js", "application/javascript")
 	case "app.css":
-		contentType = "text/css"
+		return serveAsset(c, "app.css", "text/css")
 	default:
 		return echo.NewHTTPError(http.StatusNotFound)
 	}
+}
 
+// serveAsset is a helper function that serves a file with the specified content type
+func serveAsset(c echo.Context, filename string, contentType string) error {
 	// Open the file from assetsFS
 	f, err := assetsFS.Open(filename)
 	if err != nil {
