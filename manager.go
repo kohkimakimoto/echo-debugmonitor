@@ -3,6 +3,7 @@ package debugmonitor
 import (
 	"io"
 	"net/http"
+	"sync"
 
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
@@ -12,6 +13,7 @@ import (
 type Manager struct {
 	monitors   []*Monitor
 	monitorMap map[string]*Monitor
+	mutex      sync.RWMutex
 }
 
 // New creates a new Echo Debug Monitor manager instance.
@@ -22,19 +24,23 @@ func New() *Manager {
 	}
 }
 
-func (m *Manager) AddMonitor(w *Monitor) {
+func (m *Manager) AddMonitor(mo *Monitor) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
 	// Initialize the channel for this monitor
 	// Using a buffered channel with size based on ChannelBufferSize
-	bufferSize := w.ChannelBufferSize
+	bufferSize := mo.ChannelBufferSize
 	if bufferSize <= 0 {
 		bufferSize = 100 // Default buffer size
 	}
-	w.dataChan = make(chan any, bufferSize)
+	mo.dataChan = make(chan any, bufferSize)
 
 	// Start a goroutine to receive data from the monitor
-	go m.receiveData(w)
+	go m.receiveData(mo)
 
-	m.monitors = append(m.monitors, w)
+	m.monitorMap[mo.Name] = mo
+	m.monitors = append(m.monitors, mo)
 }
 
 // receiveData is a goroutine that receives data from a monitor's channel
