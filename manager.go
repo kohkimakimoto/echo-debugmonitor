@@ -29,18 +29,23 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	defer m.mutex.Unlock()
 
 	// Initialize the channel for this monitor
-	// Using a buffered channel with size based on ChannelBufferSize
 	bufferSize := mo.ChannelBufferSize
 	if bufferSize <= 0 {
 		bufferSize = 100 // Default buffer size
 	}
 	mo.dataChan = make(chan any, bufferSize)
 
-	// Start a goroutine to receive data from the monitor
-	go m.receiveData(mo)
-
 	m.monitorMap[mo.Name] = mo
 	m.monitors = append(m.monitors, mo)
+
+	// Start a goroutine to receive data from the monitor
+	go m.receiveData(mo)
+}
+
+func (m *Manager) Monitors() []*Monitor {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	return m.monitors
 }
 
 // receiveData is a goroutine that receives data from a monitor's channel
