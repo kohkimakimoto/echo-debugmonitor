@@ -33,7 +33,7 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	if bufferSize <= 0 {
 		bufferSize = 100 // Default buffer size
 	}
-	mo.dataChan = make(chan any, bufferSize)
+	mo.dataChan = make(chan Data, bufferSize)
 
 	m.monitorMap[mo.Name] = mo
 	m.monitors = append(m.monitors, mo)
@@ -64,6 +64,12 @@ func (m *Manager) Handler() echo.HandlerFunc {
 	v.AnonymousComponentsDirectories = []*pongo2.AnonymousComponentsDirectory{
 		{Dir: "components"},
 	}
+	v.SharedContextProviders = map[string]viewkit.SharedContextProviderFunc{
+		"manager": func(c echo.Context) (any, error) {
+			return m, nil
+		},
+	}
+
 	r := v.MustRenderer()
 
 	return func(c echo.Context) error {

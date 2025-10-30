@@ -4,4 +4,11 @@
 @source "../views";
 @import 'extract-sfc-css:../views/**/*.html';
 
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 [x-cloak] { display: none !important; }

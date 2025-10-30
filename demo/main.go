@@ -8,8 +8,14 @@ import (
 func main() {
 	e := echo.New()
 
-	m := debugmonitor.New()
-	e.Any("/monitor", m.Handler())
+	dm := debugmonitor.New()
+	monitor1 := &debugmonitor.Monitor{
+		Name:        "example_monitor",
+		DisplayName: "Example Monitor",
+		MaxRecords:  100,
+	}
+	dm.AddMonitor(monitor1)
+	e.Any("/monitor", dm.Handler())
 
 	if err := e.Start(":8080"); err != nil {
 		e.Logger.Fatal(err)
