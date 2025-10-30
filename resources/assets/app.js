@@ -1,5 +1,4 @@
 import 'htmx.org';
-
 import Alpine from 'alpinejs';
 import NProgress from 'nprogress';
 

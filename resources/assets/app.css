@@ -1,8 +1,9 @@
 @import 'nprogress/nprogress.css';
-
 @import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
+
+/* tailwind config */
 @source "../views";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @import 'extract-sfc-css:../views/**/*.html';
 
