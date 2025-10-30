@@ -3,6 +3,7 @@ package debugmonitor
 import (
 	"io"
 	"net/http"
+	"net/url"
 	"sync"
 
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
@@ -80,9 +81,30 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			return serveStaticFile(c, file)
 		}
 
-		return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{
-			"manager": m,
-		})
+		monitorName := c.QueryParam("monitor")
+
+		if monitorName == "" {
+			if len(m.monitors) > 0 {
+				monitor := m.monitors[0]
+				encoded := url.QueryEscape(monitor.Name)
+				return c.Redirect(http.StatusFound, c.Path()+"?monitor="+encoded)
+			} else {
+				return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{})
+			}
+		}
+
+		if monitorName != "" {
+			monitor, ok := m.monitorMap[monitorName]
+			if !ok {
+				return echo.NewHTTPError(http.StatusNotFound, "Monitor not found")
+			}
+			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
+				"monitor": monitor,
+			})
+		}
+
+		return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{})
+
 	}
 }
 
