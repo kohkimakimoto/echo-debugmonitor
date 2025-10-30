@@ -62,11 +62,7 @@
           {% for m in manager.Monitors %}
             <li>
               <button
-                {% if monitor.Name == m.Name %}
-                  class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-white"
-                {% else %}
-                  class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
-                {% endif %}
+                class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors {% if monitor.Name == m.Name %}bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-white{% else %}text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50{% endif %}"
               >
                 <span>{{ m.DisplayName }}</span>
               </button>
