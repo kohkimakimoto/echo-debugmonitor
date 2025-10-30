@@ -126,7 +126,7 @@ function processCssExtraction(inputFile, outputFile) {
       const styleMatch = extractPattern.exec(htmlContent);
 
       if (styleMatch && styleMatch[1].trim()) {
-        // Generate namespace from absolute file path
+        // Generate namespace from an absolute file path
         const namespace = path.resolve(htmlFile);
         const scopeKey = generateScopeKey(namespace);
 
@@ -264,7 +264,7 @@ function addScopeClassToAttributes(content, scopeKey) {
  * Remove <style extract> and <script extract> tags, and transform class and x-data attributes
  */
 function processHtmlFile(inputFile, outputFile) {
-  // Generate namespace from absolute file path
+  // Generate namespace from an absolute file path
   const namespace = path.resolve(inputFile);
   const scopeKey = generateScopeKey(namespace);
 
@@ -313,7 +313,7 @@ function processHtmlFile(inputFile, outputFile) {
   // Remove <script extract> tags
   content = content.replace(extractScriptPattern, '');
 
-  // Write the transformed content to output file
+  // Write the transformed content to an output file
   fs.writeFileSync(outputFile, content);
 }
 
@@ -352,8 +352,4 @@ module.exports = {
   processScriptExtraction,
   processHtmlFile,
   cleanTempFiles,
-  generateScopeKey,
-  transformAlpineComponents,
-  transformCssWithScope,
-  addScopeClassToAttributes
 };
