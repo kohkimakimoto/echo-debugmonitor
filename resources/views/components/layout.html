@@ -30,7 +30,7 @@
   }));
 </script>
 
-{% props title %}
+{% props title, monitor %}
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -59,12 +59,16 @@
       {# navigation #}
       <nav class="flex-1 overflow-y-auto p-3">
         <ul class="space-y-0.5">
-          {% for monitor in manager.Monitors %}
+          {% for m in manager.Monitors %}
             <li>
               <button
-                class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                {% if monitor.Name == m.Name %}
+                  class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors bg-blue-50 text-blue-700 dark:bg-gray-700 dark:text-white"
+                {% else %}
+                  class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700/50"
+                {% endif %}
               >
-                <span>{{ monitor.DisplayName }}</span>
+                <span>{{ m.DisplayName }}</span>
               </button>
             </li>
           {% endfor %}
