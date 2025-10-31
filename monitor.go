@@ -12,6 +12,8 @@ type Monitor struct {
 	MaxRecords int
 	// ChannelBufferSize is the size of the buffered channel for data communication.
 	ChannelBufferSize int
+	// Icon
+	Icon string
 	// dataChan is the channel for sending data to the Manager.
 	dataChan chan Data
 }
