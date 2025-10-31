@@ -69,6 +69,9 @@ func (m *Manager) Handler() echo.HandlerFunc {
 		"manager": func(c echo.Context) (any, error) {
 			return m, nil
 		},
+		"monitors": func(c echo.Context) (any, error) {
+			return newViewMonitorSlice(m.Monitors()), nil
+		},
 	}
 
 	r := v.MustRenderer()

@@ -13,12 +13,14 @@ func main() {
 		Name:        "example_monitor1",
 		DisplayName: "Example Monitor1",
 		MaxRecords:  100,
+		Icon:        debugmonitor.IconExclamationCircle,
 	}
 	dm.AddMonitor(monitor1)
 	monitor2 := &debugmonitor.Monitor{
 		Name:        "example_monitor2",
 		DisplayName: "Example Monitor2",
 		MaxRecords:  100,
+		Icon:        debugmonitor.IconCircleStack,
 	}
 	dm.AddMonitor(monitor2)
 	e.Any("/monitor", dm.Handler())
