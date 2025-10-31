@@ -137,7 +137,7 @@ function processCssExtraction(inputFile, outputFile) {
         const tempFileName = `${htmlBasename}.temp.css`;
         const tempFilePath = path.resolve(path.dirname(htmlFile), tempFileName);
 
-        // Create temporary file for template CSS
+        // Create a temporary file for template CSS
         fs.writeFileSync(tempFilePath, transformedCss);
 
         const relativePath = path.relative(path.dirname(outputFile), tempFilePath);
@@ -214,7 +214,7 @@ function processScriptExtraction(inputFile, outputFile) {
     }
   });
 
-  // Write the transformed content to output file
+  // Write the transformed content to an output file
   fs.writeFileSync(outputFile, transformedContent);
 }
 
@@ -229,12 +229,12 @@ function addScopeClassToAttributes(content, scopeKey) {
   // Ensure no : or x-bind: prefix
   const doubleQuotePattern = /(?:^|[^:\w-])class="([^"]*)"/g;
   content = content.replace(doubleQuotePattern, (match, classValue) => {
-    // Skip if scope class is already included
+    // Skip if the scope class is already included
     if (classValue.includes(scopeKey)) {
       return match;
     }
 
-    // Add scope class to the end of the class value
+    // Add a scope class to the end of the class value
     const newClassValue = classValue === '' ? scopeKey : classValue + ' ' + scopeKey;
 
     // Replace the entire matched string (including the preceding character)
@@ -244,12 +244,12 @@ function addScopeClassToAttributes(content, scopeKey) {
   // Single-quote class attributes
   const singleQuotePattern = /(?:^|[^:\w-])class='([^']*)'/g;
   content = content.replace(singleQuotePattern, (match, classValue) => {
-    // Skip if scope class is already included
+    // Skip if the scope class is already included
     if (classValue.includes(scopeKey)) {
       return match;
     }
 
-    // Add scope class to the end of the class value
+    // Add a scope class to the end of the class value
     const newClassValue = classValue === '' ? scopeKey : classValue + ' ' + scopeKey;
 
     // Replace the entire matched string (including the preceding character)
