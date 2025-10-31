@@ -2,7 +2,7 @@ const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
-const { processCssExtraction, processScriptExtraction, processHtmlFile, cleanTempFiles } = require('./resources/extension/sfc-build');
+const { processCssExtraction, processScriptExtraction, processHtmlFile, cleanTempFiles } = require('./resources/extensions/sfc-build');
 const { glob } = require('glob');
 const { minify } = require('html-minifier-next');
 
