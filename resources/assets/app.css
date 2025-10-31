@@ -1,10 +1,12 @@
-@import 'nprogress/nprogress.css';
 @import "tailwindcss";
+@import 'nprogress/nprogress.css';
+@import "./lib/toastify.css";
 
 /* tailwind config */
 @source "../views";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* extract css from SFC files */
 @import 'extract-sfc-css:../views/**/*.html';
 
 @layer base {
