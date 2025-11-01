@@ -85,29 +85,23 @@ func (m *Manager) Handler() echo.HandlerFunc {
 		}
 
 		monitorName := c.QueryParam("monitor")
-
 		if monitorName == "" {
 			if len(m.monitors) > 0 {
 				monitor := m.monitors[0]
 				encoded := url.QueryEscape(monitor.Name)
 				return c.Redirect(http.StatusFound, c.Path()+"?monitor="+encoded)
 			} else {
-				return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{})
+				return viewkit.Render(r, c, http.StatusOK, "no_monitors", nil)
 			}
 		}
 
-		if monitorName != "" {
-			monitor, ok := m.monitorMap[monitorName]
-			if !ok {
-				return echo.NewHTTPError(http.StatusNotFound, "Monitor not found")
-			}
-			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
-				"monitor": monitor,
-			})
+		monitor, ok := m.monitorMap[monitorName]
+		if !ok {
+			return echo.NewHTTPError(http.StatusNotFound, "Monitor not found")
 		}
-
-		return viewkit.Render(r, c, http.StatusOK, "home", map[string]any{})
-
+		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
+			"monitor": newViewMonitor(monitor),
+		})
 	}
 }
 
