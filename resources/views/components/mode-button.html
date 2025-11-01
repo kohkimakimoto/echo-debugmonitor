@@ -9,7 +9,13 @@
       if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         this.isDark = true;
         document.documentElement.classList.add('dark');
+      } else {
+        this.isDark = false;
+        document.documentElement.classList.remove('light');
       }
+
+      // Mark initialization as complete
+      document.documentElement.setAttribute('data-theme-ready', 'true');
     },
 
     toggleDarkMode() {
@@ -25,7 +31,14 @@
   }));
 </script>
 
-<button x-data="modeButton" @click="toggleDarkMode" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+<style extract>
+  /* Prevent flash by hiding content until theme is applied */
+  html:not([data-theme-ready]) body {
+    visibility: hidden;
+  }
+</style>
+
+<button x-data="modeButton" x-cloak @click="toggleDarkMode" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer">
   <svg x-show="!isDark" class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
   </svg>
