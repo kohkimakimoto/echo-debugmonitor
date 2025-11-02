@@ -9,8 +9,12 @@ func TestStore_Add(t *testing.T) {
 	store := NewStore(5)
 
 	// Add some records
-	for i := int64(1); i <= 3; i++ {
-		store.Add(i, Data{"message": "test", "index": i})
+	for i := 1; i <= 3; i++ {
+		id := store.Add(Data{"message": "test", "index": i})
+		expectedID := int64(i)
+		if id != expectedID {
+			t.Errorf("Expected ID %d, got %d", expectedID, id)
+		}
 	}
 
 	if store.Len() != 3 {
@@ -22,20 +26,20 @@ func TestStore_Get(t *testing.T) {
 	store := NewStore(10)
 
 	// Add a record
-	store.Add(1, Data{"message": "hello"})
+	addedID := store.Add(Data{"message": "hello"})
 
 	// Get the record
-	record, exists := store.Get(1)
+	data, exists := store.Get(addedID)
 	if !exists {
 		t.Fatal("Record should exist")
 	}
 
-	if record.ID != 1 {
-		t.Errorf("Expected ID 1, got %d", record.ID)
+	if data["id"] != addedID {
+		t.Errorf("Expected ID %d, got %v", addedID, data["id"])
 	}
 
-	if record.Data["message"] != "hello" {
-		t.Errorf("Expected message 'hello', got %v", record.Data["message"])
+	if data["message"] != "hello" {
+		t.Errorf("Expected message 'hello', got %v", data["message"])
 	}
 
 	// Try to get a non-existent record
@@ -49,8 +53,10 @@ func TestStore_MaxRecords(t *testing.T) {
 	store := NewStore(3)
 
 	// Add 5 records (exceeds limit of 3)
-	for i := int64(1); i <= 5; i++ {
-		store.Add(i, Data{"index": i})
+	var ids []int64
+	for i := 1; i <= 5; i++ {
+		id := store.Add(Data{"index": i})
+		ids = append(ids, id)
 	}
 
 	// Should only have 3 records
@@ -58,22 +64,22 @@ func TestStore_MaxRecords(t *testing.T) {
 		t.Errorf("Expected 3 records, got %d", store.Len())
 	}
 
-	// The oldest records (1, 2) should be removed
-	_, exists := store.Get(1)
+	// The oldest records (IDs 1, 2) should be removed
+	_, exists := store.Get(ids[0])
 	if exists {
-		t.Error("Record 1 should have been removed")
+		t.Errorf("Record with ID %d should have been removed", ids[0])
 	}
 
-	_, exists = store.Get(2)
+	_, exists = store.Get(ids[1])
 	if exists {
-		t.Error("Record 2 should have been removed")
+		t.Errorf("Record with ID %d should have been removed", ids[1])
 	}
 
-	// The newest records (3, 4, 5) should remain
-	for i := int64(3); i <= 5; i++ {
-		_, exists := store.Get(i)
+	// The newest records (IDs 3, 4, 5) should remain
+	for i := 2; i < 5; i++ {
+		_, exists := store.Get(ids[i])
 		if !exists {
-			t.Errorf("Record %d should exist", i)
+			t.Errorf("Record with ID %d should exist", ids[i])
 		}
 	}
 }
@@ -82,8 +88,8 @@ func TestStore_GetLatest(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
-	for i := int64(1); i <= 5; i++ {
-		store.Add(i, Data{"index": i})
+	for i := 1; i <= 5; i++ {
+		store.Add(Data{"index": i})
 	}
 
 	// Get latest 3 records
@@ -94,9 +100,9 @@ func TestStore_GetLatest(t *testing.T) {
 
 	// Should be in reverse chronological order: 5, 4, 3
 	expectedIDs := []int64{5, 4, 3}
-	for i, record := range latest {
-		if record.ID != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedIDs[i], i, record.ID)
+	for i, data := range latest {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 
@@ -111,8 +117,8 @@ func TestStore_GetSince(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
-	for i := int64(1); i <= 5; i++ {
-		store.Add(i, Data{"index": i})
+	for i := 1; i <= 5; i++ {
+		store.Add(Data{"index": i})
 	}
 
 	// Get records since ID 2
@@ -123,9 +129,9 @@ func TestStore_GetSince(t *testing.T) {
 
 	// Should be in chronological order: 3, 4, 5
 	expectedIDs := []int64{3, 4, 5}
-	for i, record := range since {
-		if record.ID != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedIDs[i], i, record.ID)
+	for i, data := range since {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 
@@ -146,8 +152,8 @@ func TestStore_GetAll(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
-	for i := int64(1); i <= 5; i++ {
-		store.Add(i, Data{"index": i})
+	for i := 1; i <= 5; i++ {
+		store.Add(Data{"index": i})
 	}
 
 	all := store.GetAll()
@@ -156,10 +162,10 @@ func TestStore_GetAll(t *testing.T) {
 	}
 
 	// Should be in chronological order
-	for i, record := range all {
+	for i, data := range all {
 		expectedID := int64(i + 1)
-		if record.ID != expectedID {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedID, i, record.ID)
+		if data["id"] != expectedID {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedID, i, data["id"])
 		}
 	}
 }
@@ -168,8 +174,12 @@ func TestStore_Clear(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
-	for i := int64(1); i <= 5; i++ {
-		store.Add(i, Data{"index": i})
+	var firstRecordID int64
+	for i := 1; i <= 5; i++ {
+		id := store.Add(Data{"index": i})
+		if i == 1 {
+			firstRecordID = id
+		}
 	}
 
 	if store.Len() != 5 {
@@ -184,7 +194,7 @@ func TestStore_Clear(t *testing.T) {
 	}
 
 	// Verify records are actually gone
-	_, exists := store.Get(1)
+	_, exists := store.Get(firstRecordID)
 	if exists {
 		t.Error("Records should not exist after clear")
 	}
@@ -203,8 +213,7 @@ func TestStore_Concurrency(t *testing.T) {
 		go func(offset int) {
 			defer wg.Done()
 			for j := 0; j < recordsPerGoroutine; j++ {
-				id := int64(offset*recordsPerGoroutine + j + 1)
-				store.Add(id, Data{"goroutine": offset, "index": j})
+				store.Add(Data{"goroutine": offset, "index": j})
 			}
 		}(i)
 	}
@@ -215,6 +224,17 @@ func TestStore_Concurrency(t *testing.T) {
 	expectedCount := numGoroutines * recordsPerGoroutine
 	if store.Len() != expectedCount {
 		t.Errorf("Expected %d records, got %d", expectedCount, store.Len())
+	}
+
+	// Verify all IDs are unique
+	allData := store.GetAll()
+	seen := make(map[int64]bool)
+	for _, data := range allData {
+		id := data["id"].(int64)
+		if seen[id] {
+			t.Errorf("Duplicate ID found: %d", id)
+		}
+		seen[id] = true
 	}
 
 	// Concurrent reads
@@ -236,8 +256,8 @@ func TestStore_DefaultMaxRecords(t *testing.T) {
 	store := NewStore(0)
 
 	// Should use default value (1000)
-	for i := int64(1); i <= 1001; i++ {
-		store.Add(i, Data{"index": i})
+	for i := 1; i <= 1001; i++ {
+		store.Add(Data{"index": i})
 	}
 
 	// Should have default max (1000) records

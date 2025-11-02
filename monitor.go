@@ -19,8 +19,6 @@ type Monitor struct {
 
 	// dataChan is the channel for sending data to the Manager.
 	dataChan chan Data
-	// idGen is the ID generator for records.
-	idGen *IDGenerator
 	// store is the in-memory data store for records.
 	store *Store
 }
@@ -47,34 +45,38 @@ func (m *Monitor) Write(data Data) error {
 	return nil
 }
 
-// GetRecord retrieves a specific record by ID.
-func (m *Monitor) GetRecord(id int64) (*Record, bool) {
+// GetData retrieves data by ID.
+// Returns the data (including the ID as key "id") and true if found, nil and false otherwise.
+func (m *Monitor) GetData(id int64) (Data, bool) {
 	if m.store == nil {
 		return nil, false
 	}
 	return m.store.Get(id)
 }
 
-// GetLatestRecords returns the N most recent records.
-func (m *Monitor) GetLatestRecords(n int) []*Record {
+// GetLatestData returns the N most recent data entries.
+// Each entry includes the ID as key "id".
+func (m *Monitor) GetLatestData(n int) []Data {
 	if m.store == nil {
-		return []*Record{}
+		return []Data{}
 	}
 	return m.store.GetLatest(n)
 }
 
-// GetRecordsSince returns all records with ID greater than the specified ID.
-func (m *Monitor) GetRecordsSince(sinceID int64) []*Record {
+// GetDataSince returns all data entries with ID greater than the specified ID.
+// Each entry includes the ID as key "id".
+func (m *Monitor) GetDataSince(sinceID int64) []Data {
 	if m.store == nil {
-		return []*Record{}
+		return []Data{}
 	}
 	return m.store.GetSince(sinceID)
 }
 
-// GetAllRecords returns all stored records.
-func (m *Monitor) GetAllRecords() []*Record {
+// GetAllData returns all stored data entries.
+// Each entry includes the ID as key "id".
+func (m *Monitor) GetAllData() []Data {
 	if m.store == nil {
-		return []*Record{}
+		return []Data{}
 	}
 	return m.store.GetAll()
 }

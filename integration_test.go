@@ -32,61 +32,61 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify data was stored
-	records := mon.GetAllRecords()
-	if len(records) != 5 {
-		t.Errorf("Expected 5 records, got %d", len(records))
+	allData := mon.GetAllData()
+	if len(allData) != 5 {
+		t.Errorf("Expected 5 records, got %d", len(allData))
 	}
 
 	// Verify IDs are sequential
-	for i, record := range records {
+	for i, data := range allData {
 		expectedID := int64(i + 1)
-		if record.ID != expectedID {
-			t.Errorf("Expected ID %d, got %d", expectedID, record.ID)
+		if data["id"] != expectedID {
+			t.Errorf("Expected ID %d, got %v", expectedID, data["id"])
 		}
 	}
 
-	// Test GetLatestRecords
-	latest := mon.GetLatestRecords(3)
+	// Test GetLatestData
+	latest := mon.GetLatestData(3)
 	if len(latest) != 3 {
 		t.Errorf("Expected 3 latest records, got %d", len(latest))
 	}
 
 	// Should be in reverse order: 5, 4, 3
 	expectedIDs := []int64{5, 4, 3}
-	for i, record := range latest {
-		if record.ID != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedIDs[i], i, record.ID)
+	for i, data := range latest {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 
-	// Test GetRecordsSince
-	since := mon.GetRecordsSince(2)
+	// Test GetDataSince
+	since := mon.GetDataSince(2)
 	if len(since) != 3 {
 		t.Errorf("Expected 3 records since ID 2, got %d", len(since))
 	}
 
 	// Should be in chronological order: 3, 4, 5
 	expectedSinceIDs := []int64{3, 4, 5}
-	for i, record := range since {
-		if record.ID != expectedSinceIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedSinceIDs[i], i, record.ID)
+	for i, data := range since {
+		if data["id"] != expectedSinceIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedSinceIDs[i], i, data["id"])
 		}
 	}
 
-	// Test GetRecord
-	record, exists := mon.GetRecord(3)
+	// Test GetData
+	data, exists := mon.GetData(3)
 	if !exists {
 		t.Fatal("Record 3 should exist")
 	}
-	if record.ID != 3 {
-		t.Errorf("Expected ID 3, got %d", record.ID)
+	if data["id"] != int64(3) {
+		t.Errorf("Expected ID 3, got %v", data["id"])
 	}
-	// Verify the record has the expected fields (but don't assume index matches ID)
-	if _, ok := record.Data["index"]; !ok {
-		t.Error("Record should have 'index' field")
+	// Verify the data has the expected fields (but don't assume index matches ID)
+	if _, ok := data["index"]; !ok {
+		t.Error("Data should have 'index' field")
 	}
-	if record.Data["message"] != "test message" {
-		t.Errorf("Expected message 'test message', got %v", record.Data["message"])
+	if data["message"] != "test message" {
+		t.Errorf("Expected message 'test message', got %v", data["message"])
 	}
 }
 
@@ -117,25 +117,25 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Should only have 3 records (the most recent ones)
-	records := mon.GetAllRecords()
-	if len(records) != 3 {
-		t.Errorf("Expected 3 records, got %d", len(records))
+	allData := mon.GetAllData()
+	if len(allData) != 3 {
+		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
 	// Should have records 3, 4, 5 (oldest 1, 2 should be removed)
 	expectedIDs := []int64{3, 4, 5}
-	for i, record := range records {
-		if record.ID != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedIDs[i], i, record.ID)
+	for i, data := range allData {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 
 	// Verify old records are gone
-	_, exists := mon.GetRecord(1)
+	_, exists := mon.GetData(1)
 	if exists {
 		t.Error("Record 1 should have been removed")
 	}
-	_, exists = mon.GetRecord(2)
+	_, exists = mon.GetData(2)
 	if exists {
 		t.Error("Record 2 should have been removed")
 	}
@@ -178,18 +178,19 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Verify all records were stored
-	records := mon.GetAllRecords()
+	allData := mon.GetAllData()
 	expectedCount := numGoroutines * writesPerGoroutine
-	if len(records) != expectedCount {
-		t.Errorf("Expected %d records, got %d", expectedCount, len(records))
+	if len(allData) != expectedCount {
+		t.Errorf("Expected %d records, got %d", expectedCount, len(allData))
 	}
 
 	// Verify all IDs are unique and sequential
 	seen := make(map[int64]bool)
-	for _, record := range records {
-		if seen[record.ID] {
-			t.Errorf("Duplicate ID found: %d", record.ID)
+	for _, data := range allData {
+		id := data["id"].(int64)
+		if seen[id] {
+			t.Errorf("Duplicate ID found: %d", id)
 		}
-		seen[record.ID] = true
+		seen[id] = true
 	}
 }
