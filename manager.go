@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/kohkimakimoto/echo-debugmonitor/pkg/htmx"
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
@@ -97,7 +98,8 @@ func (m *Manager) Handler() echo.HandlerFunc {
 
 		monitor, ok := m.monitorMap[monitorName]
 		if !ok {
-			return echo.NewHTTPError(http.StatusNotFound, "Monitor not found")
+			// Monitor not found. Redirect to the Echo Debug Monitor top page.
+			return htmx.ReloadRedirect(c, http.StatusFound, c.Path())
 		}
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
 			"monitor": newViewMonitor(monitor),
