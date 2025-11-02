@@ -73,28 +73,6 @@ func (s *Store) Add(data Data) int64 {
 	return id
 }
 
-// Get retrieves data by its ID.
-// Returns the data with the ID included (key "id") and true if found, nil and false otherwise.
-func (s *Store) Get(id int64) (Data, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	element, exists := s.records[id]
-	if !exists {
-		return nil, false
-	}
-	rec := element.Value.(*record)
-
-	// Create a copy of data with ID included
-	result := make(Data, len(rec.data)+1)
-	for k, v := range rec.data {
-		result[k] = v
-	}
-	result["id"] = rec.id
-
-	return result, true
-}
-
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
 // Each data entry includes the ID (key "id").
 // If n is greater than the number of records, all records are returned.
@@ -130,35 +108,37 @@ func (s *Store) GetLatest(n int) []Data {
 // GetSince returns all data entries with ID greater than the specified ID,
 // in chronological order (oldest first).
 // Each data entry includes the ID (key "id").
-// This is useful for getting new records since a specific point.
+// This is optimized for cursor-based pagination in log streaming.
+// Time complexity: O(m) where m is the number of results.
 func (s *Store) GetSince(sinceID int64) []Data {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	result := make([]Data, 0)
-	for element := s.order.Front(); element != nil; element = element.Next() {
-		rec := element.Value.(*record)
-		if rec.id > sinceID {
-			data := make(Data, len(rec.data)+1)
-			for k, v := range rec.data {
-				data[k] = v
+
+	var startElement *list.Element
+	if sinceID == 0 {
+		// Start from the beginning if sinceID is 0
+		startElement = s.order.Front()
+	} else {
+		// Find the element with sinceID and start from the next one
+		if element, exists := s.records[sinceID]; exists {
+			startElement = element.Next()
+		} else {
+			// If sinceID doesn't exist, find the first element with ID > sinceID
+			// This handles the case where sinceID was already removed from the store
+			for element := s.order.Front(); element != nil; element = element.Next() {
+				rec := element.Value.(*record)
+				if rec.id > sinceID {
+					startElement = element
+					break
+				}
 			}
-			data["id"] = rec.id
-			result = append(result, data)
 		}
 	}
 
-	return result
-}
-
-// GetAll returns all data entries in chronological order (oldest first).
-// Each data entry includes the ID (key "id").
-func (s *Store) GetAll() []Data {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	result := make([]Data, 0, s.order.Len())
-	for element := s.order.Front(); element != nil; element = element.Next() {
+	// Collect all records from startElement to the end
+	for element := startElement; element != nil; element = element.Next() {
 		rec := element.Value.(*record)
 		data := make(Data, len(rec.data)+1)
 		for k, v := range rec.data {

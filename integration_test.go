@@ -31,8 +31,8 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	// Give the goroutine time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Verify data was stored
-	allData := mon.GetAllData()
+	// Verify data was stored using GetDataSince(0) which returns all records
+	allData := mon.GetDataSince(0)
 	if len(allData) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(allData))
 	}
@@ -59,7 +59,7 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 		}
 	}
 
-	// Test GetDataSince
+	// Test GetDataSince for cursor-based pagination
 	since := mon.GetDataSince(2)
 	if len(since) != 3 {
 		t.Errorf("Expected 3 records since ID 2, got %d", len(since))
@@ -71,22 +71,10 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 		if data["id"] != expectedSinceIDs[i] {
 			t.Errorf("Expected ID %d at position %d, got %v", expectedSinceIDs[i], i, data["id"])
 		}
-	}
-
-	// Test GetData
-	data, exists := mon.GetData(3)
-	if !exists {
-		t.Fatal("Record 3 should exist")
-	}
-	if data["id"] != int64(3) {
-		t.Errorf("Expected ID 3, got %v", data["id"])
-	}
-	// Verify the data has the expected fields (but don't assume index matches ID)
-	if _, ok := data["index"]; !ok {
-		t.Error("Data should have 'index' field")
-	}
-	if data["message"] != "test message" {
-		t.Errorf("Expected message 'test message', got %v", data["message"])
+		// Verify data structure
+		if data["message"] != "test message" {
+			t.Errorf("Expected message 'test message', got %v", data["message"])
+		}
 	}
 }
 
@@ -117,7 +105,7 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Should only have 3 records (the most recent ones)
-	allData := mon.GetAllData()
+	allData := mon.GetDataSince(0)
 	if len(allData) != 3 {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
@@ -130,14 +118,10 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 		}
 	}
 
-	// Verify old records are gone
-	_, exists := mon.GetData(1)
-	if exists {
-		t.Error("Record 1 should have been removed")
-	}
-	_, exists = mon.GetData(2)
-	if exists {
-		t.Error("Record 2 should have been removed")
+	// Verify old records are gone by checking GetDataSince returns no records before ID 3
+	beforeThree := mon.GetDataSince(0)
+	if len(beforeThree) > 0 && beforeThree[0]["id"].(int64) < 3 {
+		t.Error("Records 1 and 2 should have been removed")
 	}
 }
 
@@ -178,7 +162,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Verify all records were stored
-	allData := mon.GetAllData()
+	allData := mon.GetDataSince(0)
 	expectedCount := numGoroutines * writesPerGoroutine
 	if len(allData) != expectedCount {
 		t.Errorf("Expected %d records, got %d", expectedCount, len(allData))

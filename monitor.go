@@ -45,17 +45,9 @@ func (m *Monitor) Write(data Data) error {
 	return nil
 }
 
-// GetData retrieves data by ID.
-// Returns the data (including the ID as key "id") and true if found, nil and false otherwise.
-func (m *Monitor) GetData(id int64) (Data, bool) {
-	if m.store == nil {
-		return nil, false
-	}
-	return m.store.Get(id)
-}
-
 // GetLatestData returns the N most recent data entries.
 // Each entry includes the ID as key "id".
+// This is typically used for the initial display of logs.
 func (m *Monitor) GetLatestData(n int) []Data {
 	if m.store == nil {
 		return []Data{}
@@ -65,20 +57,13 @@ func (m *Monitor) GetLatestData(n int) []Data {
 
 // GetDataSince returns all data entries with ID greater than the specified ID.
 // Each entry includes the ID as key "id".
+// This is optimized for cursor-based pagination in log streaming.
+// Pass sinceID=0 to get all records from the beginning.
 func (m *Monitor) GetDataSince(sinceID int64) []Data {
 	if m.store == nil {
 		return []Data{}
 	}
 	return m.store.GetSince(sinceID)
-}
-
-// GetAllData returns all stored data entries.
-// Each entry includes the ID as key "id".
-func (m *Monitor) GetAllData() []Data {
-	if m.store == nil {
-		return []Data{}
-	}
-	return m.store.GetAll()
 }
 
 const (

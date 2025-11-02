@@ -22,32 +22,8 @@ func TestStore_Add(t *testing.T) {
 	}
 }
 
-func TestStore_Get(t *testing.T) {
-	store := NewStore(10)
-
-	// Add a record
-	addedID := store.Add(Data{"message": "hello"})
-
-	// Get the record
-	data, exists := store.Get(addedID)
-	if !exists {
-		t.Fatal("Record should exist")
-	}
-
-	if data["id"] != addedID {
-		t.Errorf("Expected ID %d, got %v", addedID, data["id"])
-	}
-
-	if data["message"] != "hello" {
-		t.Errorf("Expected message 'hello', got %v", data["message"])
-	}
-
-	// Try to get a non-existent record
-	_, exists = store.Get(999)
-	if exists {
-		t.Error("Record 999 should not exist")
-	}
-}
+// TestStore_Get is removed because Get method is no longer needed.
+// Use GetSince to retrieve records by ID range.
 
 func TestStore_MaxRecords(t *testing.T) {
 	store := NewStore(3)
@@ -64,22 +40,17 @@ func TestStore_MaxRecords(t *testing.T) {
 		t.Errorf("Expected 3 records, got %d", store.Len())
 	}
 
-	// The oldest records (IDs 1, 2) should be removed
-	_, exists := store.Get(ids[0])
-	if exists {
-		t.Errorf("Record with ID %d should have been removed", ids[0])
+	// Get all records and verify only the newest 3 remain
+	allData := store.GetSince(0)
+	if len(allData) != 3 {
+		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
-	_, exists = store.Get(ids[1])
-	if exists {
-		t.Errorf("Record with ID %d should have been removed", ids[1])
-	}
-
-	// The newest records (IDs 3, 4, 5) should remain
-	for i := 2; i < 5; i++ {
-		_, exists := store.Get(ids[i])
-		if !exists {
-			t.Errorf("Record with ID %d should exist", ids[i])
+	// Should have records with IDs 3, 4, 5 (oldest 1, 2 should be removed)
+	expectedIDs := []int64{3, 4, 5}
+	for i, data := range allData {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 }
@@ -148,7 +119,46 @@ func TestStore_GetSince(t *testing.T) {
 	}
 }
 
-func TestStore_GetAll(t *testing.T) {
+func TestStore_GetSince_WithRemovedID(t *testing.T) {
+	store := NewStore(3)
+
+	// Add 5 records (IDs 1-5), but only 3-5 will remain due to maxRecords limit
+	for i := 1; i <= 5; i++ {
+		store.Add(Data{"index": i})
+	}
+
+	// GetSince with an ID that was removed (ID 1)
+	// Should return all records that exist with ID > 1 (which are 3, 4, 5)
+	since := store.GetSince(1)
+	if len(since) != 3 {
+		t.Errorf("Expected 3 records, got %d", len(since))
+	}
+
+	expectedIDs := []int64{3, 4, 5}
+	for i, data := range since {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
+		}
+	}
+
+	// GetSince with an ID that exists (ID 3)
+	// Should return records 4, 5
+	since = store.GetSince(3)
+	if len(since) != 2 {
+		t.Errorf("Expected 2 records, got %d", len(since))
+	}
+
+	expectedIDs = []int64{4, 5}
+	for i, data := range since {
+		if data["id"] != expectedIDs[i] {
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
+		}
+	}
+}
+
+// TestStore_GetAll is removed because GetAll method is no longer needed.
+// Use GetSince(0) to get all records instead.
+func TestStore_GetAll_ViaGetSince(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
@@ -156,7 +166,8 @@ func TestStore_GetAll(t *testing.T) {
 		store.Add(Data{"index": i})
 	}
 
-	all := store.GetAll()
+	// GetSince(0) should return all records
+	all := store.GetSince(0)
 	if len(all) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(all))
 	}
@@ -174,12 +185,8 @@ func TestStore_Clear(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
-	var firstRecordID int64
 	for i := 1; i <= 5; i++ {
-		id := store.Add(Data{"index": i})
-		if i == 1 {
-			firstRecordID = id
-		}
+		store.Add(Data{"index": i})
 	}
 
 	if store.Len() != 5 {
@@ -193,9 +200,9 @@ func TestStore_Clear(t *testing.T) {
 		t.Errorf("Expected 0 records after clear, got %d", store.Len())
 	}
 
-	// Verify records are actually gone
-	_, exists := store.Get(firstRecordID)
-	if exists {
+	// Verify records are actually gone by checking GetSince(0)
+	allData := store.GetSince(0)
+	if len(allData) != 0 {
 		t.Error("Records should not exist after clear")
 	}
 }
@@ -227,7 +234,7 @@ func TestStore_Concurrency(t *testing.T) {
 	}
 
 	// Verify all IDs are unique
-	allData := store.GetAll()
+	allData := store.GetSince(0)
 	seen := make(map[int64]bool)
 	for _, data := range allData {
 		id := data["id"].(int64)
@@ -244,7 +251,7 @@ func TestStore_Concurrency(t *testing.T) {
 			defer wg.Done()
 			_ = store.GetLatest(10)
 			_ = store.GetSince(100)
-			_ = store.GetAll()
+			_ = store.GetSince(0)
 		}()
 	}
 
