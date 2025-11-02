@@ -37,6 +37,9 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	}
 	mo.dataChan = make(chan Data, bufferSize)
 
+	// Initialize the ID generator for this monitor
+	mo.idGen = NewIDGenerator()
+
 	m.monitorMap[mo.Name] = mo
 	m.monitors = append(m.monitors, mo)
 

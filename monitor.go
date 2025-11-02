@@ -19,9 +19,16 @@ type Monitor struct {
 
 	// dataChan is the channel for sending data to the Manager.
 	dataChan chan Data
+	// idGen is the ID generator for records.
+	idGen *IDGenerator
 }
 
 func (m *Monitor) Write(data Data) error {
+	// Generate a unique ID for this record
+	if m.idGen != nil {
+		data["_id"] = m.idGen.Next()
+	}
+
 	// Send data to the channel if it's initialized
 	// Use a goroutine to prevent blocking the caller
 	if m.dataChan != nil {
