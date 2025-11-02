@@ -5,17 +5,8 @@
     isDark: false,
 
     init() {
-      const savedTheme = localStorage.getItem('echo-debugmonitor-theme');
-      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        this.isDark = true;
-        document.documentElement.classList.add('dark');
-      } else {
-        this.isDark = false;
-        document.documentElement.classList.remove('light');
-      }
-
-      // Mark initialization as complete
-      document.documentElement.setAttribute('data-theme-ready', 'true');
+      // Set the initial state based on the current theme
+      this.isDark = document.documentElement.classList.contains('dark');
     },
 
     toggleDarkMode() {
@@ -30,13 +21,6 @@
     },
   }));
 </script>
-
-<style extract>
-  /* Prevent flash by hiding content until theme is applied */
-  html:not([data-theme-ready]) body {
-    visibility: hidden;
-  }
-</style>
 
 <button x-data="modeButton" x-cloak @click="toggleDarkMode" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer">
   <svg x-show="!isDark" class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
