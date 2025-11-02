@@ -16,6 +16,7 @@ type Monitor struct {
 	ChannelBufferSize int
 	// Icon
 	Icon string
+
 	// dataChan is the channel for sending data to the Manager.
 	dataChan chan Data
 }
