@@ -21,22 +21,62 @@ type Monitor struct {
 	dataChan chan Data
 	// idGen is the ID generator for records.
 	idGen *IDGenerator
+	// store is the in-memory data store for records.
+	store *Store
 }
 
 func (m *Monitor) Write(data Data) error {
-	// Generate a unique ID for this record
-	if m.idGen != nil {
-		data["_id"] = m.idGen.Next()
+	if m.dataChan == nil {
+		// noop if the channel is not initialized
+		// It means the monitor is not connected to a Manager
+		return nil
 	}
 
-	// Send data to the channel if it's initialized
-	// Use a goroutine to prevent blocking the caller
-	if m.dataChan != nil {
-		go func() {
-			m.dataChan <- data
-		}()
+	// Make a copy of the data to avoid race conditions
+	dataCopy := make(Data, len(data))
+	for k, v := range data {
+		dataCopy[k] = v
 	}
+
+	// Send data to the channel.
+	// Use a goroutine to prevent blocking the caller
+	go func() {
+		m.dataChan <- dataCopy
+	}()
+
 	return nil
+}
+
+// GetRecord retrieves a specific record by ID.
+func (m *Monitor) GetRecord(id int64) (*Record, bool) {
+	if m.store == nil {
+		return nil, false
+	}
+	return m.store.Get(id)
+}
+
+// GetLatestRecords returns the N most recent records.
+func (m *Monitor) GetLatestRecords(n int) []*Record {
+	if m.store == nil {
+		return []*Record{}
+	}
+	return m.store.GetLatest(n)
+}
+
+// GetRecordsSince returns all records with ID greater than the specified ID.
+func (m *Monitor) GetRecordsSince(sinceID int64) []*Record {
+	if m.store == nil {
+		return []*Record{}
+	}
+	return m.store.GetSince(sinceID)
+}
+
+// GetAllRecords returns all stored records.
+func (m *Monitor) GetAllRecords() []*Record {
+	if m.store == nil {
+		return []*Record{}
+	}
+	return m.store.GetAll()
 }
 
 const (

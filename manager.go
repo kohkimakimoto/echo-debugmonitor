@@ -40,6 +40,9 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	// Initialize the ID generator for this monitor
 	mo.idGen = NewIDGenerator()
 
+	// Initialize the data store for this monitor
+	mo.store = NewStore(mo.MaxRecords)
+
 	m.monitorMap[mo.Name] = mo
 	m.monitors = append(m.monitors, mo)
 
@@ -56,9 +59,10 @@ func (m *Manager) Monitors() []*Monitor {
 // receiveData is a goroutine that receives data from a monitor's channel
 func (m *Manager) receiveData(monitor *Monitor) {
 	for data := range monitor.dataChan {
-		// TODO: Store data in memory buffer
-		// For now, just receive it to prevent channel blocking
-		_ = data
+		// Generate a unique ID for this record
+		id := monitor.idGen.Next()
+		// Store the data in the monitor's store
+		monitor.store.Add(id, data)
 	}
 }
 
