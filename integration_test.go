@@ -31,18 +31,20 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	// Give the goroutine time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Verify data was stored using GetDataSince(0) which returns all records
-	allData := mon.GetDataSince(0)
+	// Verify data was stored using GetDataSince("") which returns all records
+	allData := mon.GetDataSince("")
 	if len(allData) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(allData))
 	}
 
-	// Verify IDs are sequential
-	for i, data := range allData {
-		expectedID := int64(i + 1)
-		if data["id"] != expectedID {
-			t.Errorf("Expected ID %d, got %v", expectedID, data["id"])
+	// Store IDs for later verification
+	var ids []string
+	for _, data := range allData {
+		id, ok := data["id"].(string)
+		if !ok {
+			t.Fatalf("Expected ID to be string, got %T", data["id"])
 		}
+		ids = append(ids, id)
 	}
 
 	// Test GetLatestData
@@ -51,25 +53,25 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 		t.Errorf("Expected 3 latest records, got %d", len(latest))
 	}
 
-	// Should be in reverse order: 5, 4, 3
-	expectedIDs := []int64{5, 4, 3}
+	// Should be in reverse order (newest first)
+	expectedIDs := []string{ids[4], ids[3], ids[2]}
 	for i, data := range latest {
 		if data["id"] != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
+			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, data["id"])
 		}
 	}
 
 	// Test GetDataSince for cursor-based pagination
-	since := mon.GetDataSince(2)
+	since := mon.GetDataSince(ids[1])
 	if len(since) != 3 {
-		t.Errorf("Expected 3 records since ID 2, got %d", len(since))
+		t.Errorf("Expected 3 records since ID %s, got %d", ids[1], len(since))
 	}
 
-	// Should be in chronological order: 3, 4, 5
-	expectedSinceIDs := []int64{3, 4, 5}
+	// Should be in chronological order
+	expectedSinceIDs := []string{ids[2], ids[3], ids[4]}
 	for i, data := range since {
 		if data["id"] != expectedSinceIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %v", expectedSinceIDs[i], i, data["id"])
+			t.Errorf("Expected ID %s at position %d, got %v", expectedSinceIDs[i], i, data["id"])
 		}
 		// Verify data structure
 		if data["message"] != "test message" {
@@ -105,23 +107,20 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Should only have 3 records (the most recent ones)
-	allData := mon.GetDataSince(0)
+	allData := mon.GetDataSince("")
 	if len(allData) != 3 {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
-	// Should have records 3, 4, 5 (oldest 1, 2 should be removed)
-	expectedIDs := []int64{3, 4, 5}
+	// Verify we have 3 records with valid UUIDs
 	for i, data := range allData {
-		if data["id"] != expectedIDs[i] {
-			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, data["id"])
+		id, ok := data["id"].(string)
+		if !ok {
+			t.Errorf("Expected ID to be string at position %d, got %T", i, data["id"])
 		}
-	}
-
-	// Verify old records are gone by checking GetDataSince returns no records before ID 3
-	beforeThree := mon.GetDataSince(0)
-	if len(beforeThree) > 0 && beforeThree[0]["id"].(int64) < 3 {
-		t.Error("Records 1 and 2 should have been removed")
+		if len(id) != 36 {
+			t.Errorf("Expected UUID length 36 at position %d, got %d", i, len(id))
+		}
 	}
 }
 
@@ -162,18 +161,24 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Verify all records were stored
-	allData := mon.GetDataSince(0)
+	allData := mon.GetDataSince("")
 	expectedCount := numGoroutines * writesPerGoroutine
 	if len(allData) != expectedCount {
 		t.Errorf("Expected %d records, got %d", expectedCount, len(allData))
 	}
 
-	// Verify all IDs are unique and sequential
-	seen := make(map[int64]bool)
+	// Verify all IDs are unique UUIDs
+	seen := make(map[string]bool)
 	for _, data := range allData {
-		id := data["id"].(int64)
+		id, ok := data["id"].(string)
+		if !ok {
+			t.Fatalf("Expected ID to be string, got %T", data["id"])
+		}
 		if seen[id] {
-			t.Errorf("Duplicate ID found: %d", id)
+			t.Errorf("Duplicate ID found: %s", id)
+		}
+		if len(id) != 36 {
+			t.Errorf("Expected UUID length 36, got %d", len(id))
 		}
 		seen[id] = true
 	}

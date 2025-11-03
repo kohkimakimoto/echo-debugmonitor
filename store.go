@@ -2,26 +2,28 @@ package debugmonitor
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 // record represents a single data record with its ID.
 // This is an internal type and should not be exposed outside the package.
 type record struct {
-	id   int64
+	id   string
 	data Data
 }
 
 // Store is an in-memory data store that provides O(1) access by ID
 // while maintaining insertion order like a linked hash map.
 // It automatically removes old records when the maximum capacity is reached.
-// It generates sequential IDs internally to guarantee sorted order.
+// It generates UUIDv7 IDs internally to guarantee uniqueness and time-based ordering.
 type Store struct {
 	mu         sync.RWMutex
 	maxRecords int
-	records    map[int64]*list.Element // map for O(1) access by ID
-	order      *list.List              // doubly linked list to maintain insertion order
-	idGen      *IDGenerator            // ID generator for sequential IDs
+	records    map[string]*list.Element // map for O(1) access by ID
+	order      *list.List               // doubly linked list to maintain insertion order
 }
 
 // NewStore creates a new Store with the specified maximum number of records.
@@ -32,33 +34,35 @@ func NewStore(maxRecords int) *Store {
 	}
 	return &Store{
 		maxRecords: maxRecords,
-		records:    make(map[int64]*list.Element),
+		records:    make(map[string]*list.Element),
 		order:      list.New(),
-		idGen:      NewIDGenerator(),
 	}
 }
 
-// Add adds a new record to the store with an auto-generated sequential ID.
-// The ID is guaranteed to be larger than all existing IDs.
-// If the store is at capacity, the oldest record (the lowest ID) is removed.
-// Returns the generated ID.
-func (s *Store) Add(data Data) int64 {
+// Add adds a new record to the store with an auto-generated UUIDv7 ID.
+// UUIDv7 provides both uniqueness and time-based ordering.
+// If the store is at capacity, the oldest record is removed.
+// Returns the generated ID and any error that occurred during ID generation.
+func (s *Store) Add(data Data) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Generate a new sequential ID
-	id := s.idGen.Next()
+	// Generate a new UUIDv7 ID
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate UUID: %w", err)
+	}
 
 	rec := &record{
-		id:   id,
+		id:   id.String(),
 		data: data,
 	}
 
-	// Since IDs are generated sequentially, new IDs are always larger than existing ones.
+	// Since UUIDv7 IDs are time-ordered, new IDs maintain chronological order.
 	// Simply add to the end of the list for O(1) insertion.
 	element := s.order.PushBack(rec)
 
-	s.records[id] = element
+	s.records[rec.id] = element
 
 	// Remove the oldest record if we exceed maxRecords
 	if s.order.Len() > s.maxRecords {
@@ -70,7 +74,7 @@ func (s *Store) Add(data Data) int64 {
 		}
 	}
 
-	return id
+	return rec.id, nil
 }
 
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
@@ -110,15 +114,15 @@ func (s *Store) GetLatest(n int) []Data {
 // Each data entry includes the ID (key "id").
 // This is optimized for cursor-based pagination in log streaming.
 // Time complexity: O(m) where m is the number of results.
-func (s *Store) GetSince(sinceID int64) []Data {
+func (s *Store) GetSince(sinceID string) []Data {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	result := make([]Data, 0)
 
 	var startElement *list.Element
-	if sinceID == 0 {
-		// Start from the beginning if sinceID is 0
+	if sinceID == "" {
+		// Start from the beginning if sinceID is empty
 		startElement = s.order.Front()
 	} else {
 		// Find the element with sinceID and start from the next one
@@ -127,6 +131,7 @@ func (s *Store) GetSince(sinceID int64) []Data {
 		} else {
 			// If sinceID doesn't exist, find the first element with ID > sinceID
 			// This handles the case where sinceID was already removed from the store
+			// Since UUIDv7 is time-ordered, we can use string comparison
 			for element := s.order.Front(); element != nil; element = element.Next() {
 				rec := element.Value.(*record)
 				if rec.id > sinceID {
@@ -163,6 +168,6 @@ func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.records = make(map[int64]*list.Element)
+	s.records = make(map[string]*list.Element)
 	s.order.Init()
 }

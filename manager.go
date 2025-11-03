@@ -59,7 +59,12 @@ func (m *Manager) receiveData(monitor *Monitor) {
 	for data := range monitor.dataChan {
 		// Store the data in the monitor's store
 		// The store generates IDs internally
-		monitor.store.Add(data)
+		// If UUID generation fails, we skip this record but continue processing
+		if _, err := monitor.store.Add(data); err != nil {
+			// Log error but continue processing other data
+			// In production, you might want to use a proper logger here
+			continue
+		}
 	}
 }
 

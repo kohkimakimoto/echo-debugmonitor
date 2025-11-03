@@ -58,8 +58,8 @@ func (m *Monitor) GetLatestData(n int) []Data {
 // GetDataSince returns all data entries with ID greater than the specified ID.
 // Each entry includes the ID as key "id".
 // This is optimized for cursor-based pagination in log streaming.
-// Pass sinceID=0 to get all records from the beginning.
-func (m *Monitor) GetDataSince(sinceID int64) []Data {
+// Pass sinceID="" to get all records from the beginning.
+func (m *Monitor) GetDataSince(sinceID string) []Data {
 	if m.store == nil {
 		return []Data{}
 	}
