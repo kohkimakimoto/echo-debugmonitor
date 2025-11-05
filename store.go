@@ -9,7 +9,6 @@ import (
 )
 
 // record represents a single data record with its ID.
-// This is an internal type and should not be exposed outside the package.
 type record struct {
 	id   string
 	data Data

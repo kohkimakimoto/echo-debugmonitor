@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/kohkimakimoto/echo-debugmonitor/pkg/htmx"
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
@@ -98,8 +97,7 @@ func (m *Manager) Handler() echo.HandlerFunc {
 		if monitorName == "" {
 			if len(m.monitors) > 0 {
 				monitor := m.monitors[0]
-				encoded := url.QueryEscape(monitor.Name)
-				return c.Redirect(http.StatusFound, c.Path()+"?monitor="+encoded)
+				return c.Redirect(http.StatusFound, c.Path()+"?monitor="+url.QueryEscape(monitor.Name))
 			} else {
 				return viewkit.Render(r, c, http.StatusOK, "no_monitors", nil)
 			}
@@ -108,8 +106,11 @@ func (m *Manager) Handler() echo.HandlerFunc {
 		monitor, ok := m.monitorMap[monitorName]
 		if !ok {
 			// Monitor not found. Redirect to the Echo Debug Monitor top page.
-			return htmx.ReloadRedirect(c, http.StatusFound, c.Path())
+			return c.Redirect(http.StatusFound, c.Path())
 		}
+
+		// The following conde is for a single monitor.
+
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
 			"monitor": newViewMonitor(monitor),
 		})
