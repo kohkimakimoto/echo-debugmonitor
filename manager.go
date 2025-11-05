@@ -81,7 +81,7 @@ func (m *Manager) Handler() echo.HandlerFunc {
 
 		monitor, ok := m.monitorMap[monitorName]
 		if !ok {
-			// Monitor not found. Redirect to the Echo Debug Monitor top page.
+			// monitor not found. Redirect to the Echo Debug monitor top page.
 			return c.Redirect(http.StatusFound, c.Path())
 		}
 

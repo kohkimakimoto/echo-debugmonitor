@@ -10,7 +10,7 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	mgr := New()
 	mon := &Monitor{
 		Name:        "test-monitor",
-		DisplayName: "Test Monitor",
+		DisplayName: "Test monitor",
 		MaxRecords:  10,
 	}
 
@@ -81,7 +81,7 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 	mgr := New()
 	mon := &Monitor{
 		Name:        "test-monitor",
-		DisplayName: "Test Monitor",
+		DisplayName: "Test monitor",
 		MaxRecords:  3,
 	}
 
@@ -119,7 +119,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	mgr := New()
 	mon := &Monitor{
 		Name:        "test-monitor",
-		DisplayName: "Test Monitor",
+		DisplayName: "Test monitor",
 		MaxRecords:  1000,
 	}
 
