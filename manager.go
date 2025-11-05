@@ -25,16 +25,16 @@ func New() *Manager {
 	}
 }
 
-func (m *Manager) AddMonitor(mo *Monitor) {
+func (m *Manager) AddMonitor(monitor *Monitor) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// Initialize the payload store for this monitor
+	// Initialize the store for this monitor
 	// The store will manage ID generation internally
-	mo.store = NewStore(mo.MaxRecords)
+	monitor.store = NewStore(monitor.MaxRecords)
 
-	m.monitorMap[mo.Name] = mo
-	m.monitors = append(m.monitors, mo)
+	m.monitorMap[monitor.Name] = monitor
+	m.monitors = append(m.monitors, monitor)
 }
 
 func (m *Manager) Monitors() []*Monitor {

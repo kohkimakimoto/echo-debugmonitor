@@ -24,55 +24,7 @@ func (m *Monitor) Write(payload any) error {
 		return nil
 	}
 
-	// Store the payload directly
 	return m.store.Add(payload)
-}
-
-// GetLatestData returns the N most recent data entries.
-// Each entry includes the ID as key "id".
-// This is typically used for the initial display of logs.
-func (m *Monitor) GetLatestData(n int) []map[string]any {
-	if m.store == nil {
-		return []map[string]any{}
-	}
-
-	entries := m.store.GetLatest(n)
-	return convertEntriesToMaps(entries)
-}
-
-// GetDataSince returns all data entries with ID greater than the specified ID.
-// Each entry includes the ID as key "id".
-// This is optimized for cursor-based pagination in log streaming.
-// Pass sinceID="" to get all records from the beginning.
-func (m *Monitor) GetDataSince(sinceID string) []map[string]any {
-	if m.store == nil {
-		return []map[string]any{}
-	}
-
-	entries := m.store.GetSince(sinceID)
-	return convertEntriesToMaps(entries)
-}
-
-// convertEntriesToMaps converts []*DataEntry to []map[string]any for backward compatibility.
-func convertEntriesToMaps(entries []*DataEntry) []map[string]any {
-	result := make([]map[string]any, 0, len(entries))
-	for _, entry := range entries {
-		data := make(map[string]any)
-
-		// If Payload is a map, copy its fields
-		if payloadMap, ok := entry.Payload.(map[string]any); ok {
-			for k, v := range payloadMap {
-				data[k] = v
-			}
-		} else {
-			// If Payload is not a map, store it under "data" key
-			data["data"] = entry.Payload
-		}
-
-		data["id"] = entry.Id
-		result = append(result, data)
-	}
-	return result
 }
 
 const (
@@ -85,28 +37,28 @@ type viewMonitor struct {
 	Monitor *Monitor
 }
 
-func newViewMonitor(mo *Monitor) *viewMonitor {
+func newViewMonitor(monitor *Monitor) *viewMonitor {
 	return &viewMonitor{
-		Monitor: mo,
+		Monitor: monitor,
 	}
 }
 
-func newViewMonitorSlice(mos []*Monitor) []*viewMonitor {
-	vms := make([]*viewMonitor, 0, len(mos))
-	for _, mo := range mos {
+func newViewMonitorSlice(monitors []*Monitor) []*viewMonitor {
+	vms := make([]*viewMonitor, 0, len(monitors))
+	for _, mo := range monitors {
 		vms = append(vms, newViewMonitor(mo))
 	}
 	return vms
 }
 
-func (m *viewMonitor) Name() string {
-	return m.Monitor.Name
+func (v *viewMonitor) Name() string {
+	return v.Monitor.Name
 }
 
-func (m *viewMonitor) DisplayName() string {
-	return m.Monitor.DisplayName
+func (v *viewMonitor) DisplayName() string {
+	return v.Monitor.DisplayName
 }
 
-func (m *viewMonitor) Icon() *pongo2.Value {
-	return pongo2.AsSafeValue(m.Monitor.Icon)
+func (v *viewMonitor) Icon() *pongo2.Value {
+	return pongo2.AsSafeValue(v.Monitor.Icon)
 }

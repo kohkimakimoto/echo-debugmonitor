@@ -21,7 +21,7 @@ type DataEntry struct {
 type Store struct {
 	mu         sync.RWMutex
 	maxRecords int
-	records    map[string]*list.Element // map for O(1) access by ID
+	entries    map[string]*list.Element // map for O(1) access by ID
 	order      *list.List               // doubly linked list to maintain insertion order
 }
 
@@ -33,7 +33,7 @@ func NewStore(maxRecords int) *Store {
 	}
 	return &Store{
 		maxRecords: maxRecords,
-		records:    make(map[string]*list.Element),
+		entries:    make(map[string]*list.Element),
 		order:      list.New(),
 	}
 }
@@ -61,14 +61,14 @@ func (s *Store) Add(payload any) error {
 	// Simply add to the end of the list for O(1) insertion.
 	element := s.order.PushBack(entry)
 
-	s.records[entry.Id] = element
+	s.entries[entry.Id] = element
 
 	// Remove the oldest record if we exceed maxRecords
 	if s.order.Len() > s.maxRecords {
 		oldest := s.order.Front()
 		if oldest != nil {
 			oldEntry := oldest.Value.(*DataEntry)
-			delete(s.records, oldEntry.Id)
+			delete(s.entries, oldEntry.Id)
 			s.order.Remove(oldest)
 		}
 	}
@@ -118,7 +118,7 @@ func (s *Store) GetSince(sinceID string) []*DataEntry {
 		startElement = s.order.Front()
 	} else {
 		// Find the element with sinceID and start from the next one
-		if element, exists := s.records[sinceID]; exists {
+		if element, exists := s.entries[sinceID]; exists {
 			startElement = element.Next()
 		} else {
 			// If sinceID doesn't exist, find the first element with ID > sinceID
@@ -150,7 +150,7 @@ func (s *Store) GetById(id string) *DataEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if element, exists := s.records[id]; exists {
+	if element, exists := s.entries[id]; exists {
 		return element.Value.(*DataEntry)
 	}
 	return nil
@@ -168,6 +168,6 @@ func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.records = make(map[string]*list.Element)
+	s.entries = make(map[string]*list.Element)
 	s.order.Init()
 }
