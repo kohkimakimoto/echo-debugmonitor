@@ -29,42 +29,18 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	// Initialize the channel for this monitor
-	bufferSize := mo.ChannelBufferSize
-	if bufferSize <= 0 {
-		bufferSize = 100 // Default buffer size
-	}
-	mo.dataChan = make(chan DataEntity, bufferSize)
-
-	// Initialize the data store for this monitor
+	// Initialize the payload store for this monitor
 	// The store will manage ID generation internally
 	mo.store = NewStore(mo.MaxRecords)
 
 	m.monitorMap[mo.Name] = mo
 	m.monitors = append(m.monitors, mo)
-
-	// Start a goroutine to receive data from the monitor
-	go m.receiveData(mo)
 }
 
 func (m *Manager) Monitors() []*Monitor {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 	return m.monitors
-}
-
-// receiveData is a goroutine that receives data from a monitor's channel
-func (m *Manager) receiveData(monitor *Monitor) {
-	for data := range monitor.dataChan {
-		// Store the data in the monitor's store
-		// The store generates IDs internally
-		// If UUID generation fails, we skip this record but continue processing
-		if _, err := monitor.store.Add(data); err != nil {
-			// Log error but continue processing other data
-			// In production, you might want to use a proper logger here
-			continue
-		}
-	}
 }
 
 func (m *Manager) Handler() echo.HandlerFunc {

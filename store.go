@@ -8,10 +8,10 @@ import (
 	"github.com/google/uuid"
 )
 
-// record represents a single data record with its ID.
-type record struct {
-	id   string
-	data DataEntity
+// DataEntry represents a single data record with its ID.
+type DataEntry struct {
+	Id      string
+	Payload any
 }
 
 // Store is an in-memory data store that provides O(1) access by ID
@@ -41,50 +41,49 @@ func NewStore(maxRecords int) *Store {
 // Add adds a new record to the store with an auto-generated UUIDv7 ID.
 // UUIDv7 provides both uniqueness and time-based ordering.
 // If the store is at capacity, the oldest record is removed.
-// Returns the generated ID and any error that occurred during ID generation.
-func (s *Store) Add(data DataEntity) (string, error) {
+// Returns any error that occurred during ID generation.
+func (s *Store) Add(payload any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// Generate a new UUIDv7 ID
 	id, err := uuid.NewV7()
 	if err != nil {
-		return "", fmt.Errorf("failed to generate UUID: %w", err)
+		return fmt.Errorf("failed to generate UUID: %w", err)
 	}
 
-	rec := &record{
-		id:   id.String(),
-		data: data,
+	entry := &DataEntry{
+		Id:      id.String(),
+		Payload: payload,
 	}
 
 	// Since UUIDv7 IDs are time-ordered, new IDs maintain chronological order.
 	// Simply add to the end of the list for O(1) insertion.
-	element := s.order.PushBack(rec)
+	element := s.order.PushBack(entry)
 
-	s.records[rec.id] = element
+	s.records[entry.Id] = element
 
 	// Remove the oldest record if we exceed maxRecords
 	if s.order.Len() > s.maxRecords {
 		oldest := s.order.Front()
 		if oldest != nil {
-			oldRecord := oldest.Value.(*record)
-			delete(s.records, oldRecord.id)
+			oldEntry := oldest.Value.(*DataEntry)
+			delete(s.records, oldEntry.Id)
 			s.order.Remove(oldest)
 		}
 	}
 
-	return rec.id, nil
+	return nil
 }
 
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
-// Each data entry includes the ID (key "id").
 // If n is greater than the number of records, all records are returned.
-func (s *Store) GetLatest(n int) []DataEntity {
+func (s *Store) GetLatest(n int) []*DataEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if n <= 0 {
-		return []DataEntity{}
+		return []*DataEntry{}
 	}
 
 	count := n
@@ -92,16 +91,11 @@ func (s *Store) GetLatest(n int) []DataEntity {
 		count = s.order.Len()
 	}
 
-	result := make([]DataEntity, 0, count)
+	result := make([]*DataEntry, 0, count)
 	element := s.order.Back()
 	for i := 0; i < count && element != nil; i++ {
-		rec := element.Value.(*record)
-		data := make(DataEntity, len(rec.data)+1)
-		for k, v := range rec.data {
-			data[k] = v
-		}
-		data["id"] = rec.id
-		result = append(result, data)
+		entry := element.Value.(*DataEntry)
+		result = append(result, entry)
 		element = element.Prev()
 	}
 
@@ -110,14 +104,13 @@ func (s *Store) GetLatest(n int) []DataEntity {
 
 // GetSince returns all data entries with ID greater than the specified ID,
 // in chronological order (oldest first).
-// Each data entry includes the ID (key "id").
 // This is optimized for cursor-based pagination in log streaming.
 // Time complexity: O(m) where m is the number of results.
-func (s *Store) GetSince(sinceID string) []DataEntity {
+func (s *Store) GetSince(sinceID string) []*DataEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make([]DataEntity, 0)
+	result := make([]*DataEntry, 0)
 
 	var startElement *list.Element
 	if sinceID == "" {
@@ -132,8 +125,8 @@ func (s *Store) GetSince(sinceID string) []DataEntity {
 			// This handles the case where sinceID was already removed from the store
 			// Since UUIDv7 is time-ordered, we can use string comparison
 			for element := s.order.Front(); element != nil; element = element.Next() {
-				rec := element.Value.(*record)
-				if rec.id > sinceID {
+				entry := element.Value.(*DataEntry)
+				if entry.Id > sinceID {
 					startElement = element
 					break
 				}
@@ -143,16 +136,24 @@ func (s *Store) GetSince(sinceID string) []DataEntity {
 
 	// Collect all records from startElement to the end
 	for element := startElement; element != nil; element = element.Next() {
-		rec := element.Value.(*record)
-		data := make(DataEntity, len(rec.data)+1)
-		for k, v := range rec.data {
-			data[k] = v
-		}
-		data["id"] = rec.id
-		result = append(result, data)
+		entry := element.Value.(*DataEntry)
+		result = append(result, entry)
 	}
 
 	return result
+}
+
+// GetById returns a single data entry by its ID.
+// Returns nil if the entry is not found.
+// Time complexity: O(1).
+func (s *Store) GetById(id string) *DataEntry {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if element, exists := s.records[id]; exists {
+		return element.Value.(*DataEntry)
+	}
+	return nil
 }
 
 // Len returns the current number of records in the store.

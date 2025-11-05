@@ -2,8 +2,6 @@ package debugmonitor
 
 import "github.com/kohkimakimoto/echo-viewkit/pongo2"
 
-type DataEntity map[string]any
-
 type Monitor struct {
 	// Name is the name of this monitor.
 	// It must be unique among all monitors.
@@ -12,58 +10,69 @@ type Monitor struct {
 	DisplayName string
 	// MaxRecords is the maximum number of records to keep in the data storage.
 	MaxRecords int
-	// ChannelBufferSize is the size of the buffered channel for data communication.
-	ChannelBufferSize int
 	// Icon
 	Icon string
 
-	// dataChan is the channel for sending data to the Manager.
-	dataChan chan DataEntity
 	// store is the in-memory data store for records.
 	store *Store
 }
 
-func (m *Monitor) Write(dataEntry DataEntity) error {
-	if m.dataChan == nil {
-		// noop if the channel is not initialized
+func (m *Monitor) Write(payload any) error {
+	if m.store == nil {
+		// noop if the store is not initialized
 		// It means the monitor is not connected to a Manager
 		return nil
 	}
 
-	// Make a copy of the dataEntry to avoid race conditions
-	dataCopy := make(DataEntity, len(dataEntry))
-	for k, v := range dataEntry {
-		dataCopy[k] = v
-	}
-
-	// Send dataEntry to the channel.
-	// Use a goroutine to prevent blocking the caller
-	go func() {
-		m.dataChan <- dataCopy
-	}()
-
-	return nil
+	// Store the payload directly
+	return m.store.Add(payload)
 }
 
 // GetLatestData returns the N most recent data entries.
 // Each entry includes the ID as key "id".
 // This is typically used for the initial display of logs.
-func (m *Monitor) GetLatestData(n int) []DataEntity {
+func (m *Monitor) GetLatestData(n int) []map[string]any {
 	if m.store == nil {
-		return []DataEntity{}
+		return []map[string]any{}
 	}
-	return m.store.GetLatest(n)
+
+	entries := m.store.GetLatest(n)
+	return convertEntriesToMaps(entries)
 }
 
 // GetDataSince returns all data entries with ID greater than the specified ID.
 // Each entry includes the ID as key "id".
 // This is optimized for cursor-based pagination in log streaming.
 // Pass sinceID="" to get all records from the beginning.
-func (m *Monitor) GetDataSince(sinceID string) []DataEntity {
+func (m *Monitor) GetDataSince(sinceID string) []map[string]any {
 	if m.store == nil {
-		return []DataEntity{}
+		return []map[string]any{}
 	}
-	return m.store.GetSince(sinceID)
+
+	entries := m.store.GetSince(sinceID)
+	return convertEntriesToMaps(entries)
+}
+
+// convertEntriesToMaps converts []*DataEntry to []map[string]any for backward compatibility.
+func convertEntriesToMaps(entries []*DataEntry) []map[string]any {
+	result := make([]map[string]any, 0, len(entries))
+	for _, entry := range entries {
+		data := make(map[string]any)
+
+		// If Payload is a map, copy its fields
+		if payloadMap, ok := entry.Payload.(map[string]any); ok {
+			for k, v := range payloadMap {
+				data[k] = v
+			}
+		} else {
+			// If Payload is not a map, store it under "data" key
+			data["data"] = entry.Payload
+		}
+
+		data["id"] = entry.Id
+		result = append(result, data)
+	}
+	return result
 }
 
 const (

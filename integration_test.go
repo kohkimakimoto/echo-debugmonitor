@@ -9,17 +9,16 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	// Create a manager and monitor
 	mgr := New()
 	mon := &Monitor{
-		Name:              "test-monitor",
-		DisplayName:       "Test Monitor",
-		MaxRecords:        10,
-		ChannelBufferSize: 10,
+		Name:        "test-monitor",
+		DisplayName: "Test Monitor",
+		MaxRecords:  10,
 	}
 
 	mgr.AddMonitor(mon)
 
 	// Write some data
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(DataEntity{
+		err := mon.Write(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
@@ -84,17 +83,16 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 	// Create a manager and monitor with small MaxRecords
 	mgr := New()
 	mon := &Monitor{
-		Name:              "test-monitor",
-		DisplayName:       "Test Monitor",
-		MaxRecords:        3,
-		ChannelBufferSize: 20,
+		Name:        "test-monitor",
+		DisplayName: "Test Monitor",
+		MaxRecords:  3,
 	}
 
 	mgr.AddMonitor(mon)
 
 	// Write 5 records (exceeds limit of 3)
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(DataEntity{
+		err := mon.Write(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
@@ -127,10 +125,9 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 func TestMonitor_ConcurrentWrites(t *testing.T) {
 	mgr := New()
 	mon := &Monitor{
-		Name:              "test-monitor",
-		DisplayName:       "Test Monitor",
-		MaxRecords:        1000,
-		ChannelBufferSize: 200,
+		Name:        "test-monitor",
+		DisplayName: "Test Monitor",
+		MaxRecords:  1000,
 	}
 
 	mgr.AddMonitor(mon)
@@ -143,7 +140,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(goroutineID int) {
 			for j := 0; j < writesPerGoroutine; j++ {
-				mon.Write(DataEntity{
+				mon.Write(map[string]any{
 					"goroutine": goroutineID,
 					"index":     j,
 				})
