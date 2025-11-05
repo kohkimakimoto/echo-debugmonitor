@@ -2,7 +2,7 @@ package debugmonitor
 
 import "github.com/kohkimakimoto/echo-viewkit/pongo2"
 
-type Data map[string]any
+type DataEntity map[string]any
 
 type Monitor struct {
 	// Name is the name of this monitor.
@@ -18,25 +18,25 @@ type Monitor struct {
 	Icon string
 
 	// dataChan is the channel for sending data to the Manager.
-	dataChan chan Data
+	dataChan chan DataEntity
 	// store is the in-memory data store for records.
 	store *Store
 }
 
-func (m *Monitor) Write(data Data) error {
+func (m *Monitor) Write(dataEntry DataEntity) error {
 	if m.dataChan == nil {
 		// noop if the channel is not initialized
 		// It means the monitor is not connected to a Manager
 		return nil
 	}
 
-	// Make a copy of the data to avoid race conditions
-	dataCopy := make(Data, len(data))
-	for k, v := range data {
+	// Make a copy of the dataEntry to avoid race conditions
+	dataCopy := make(DataEntity, len(dataEntry))
+	for k, v := range dataEntry {
 		dataCopy[k] = v
 	}
 
-	// Send data to the channel.
+	// Send dataEntry to the channel.
 	// Use a goroutine to prevent blocking the caller
 	go func() {
 		m.dataChan <- dataCopy
@@ -48,9 +48,9 @@ func (m *Monitor) Write(data Data) error {
 // GetLatestData returns the N most recent data entries.
 // Each entry includes the ID as key "id".
 // This is typically used for the initial display of logs.
-func (m *Monitor) GetLatestData(n int) []Data {
+func (m *Monitor) GetLatestData(n int) []DataEntity {
 	if m.store == nil {
-		return []Data{}
+		return []DataEntity{}
 	}
 	return m.store.GetLatest(n)
 }
@@ -59,9 +59,9 @@ func (m *Monitor) GetLatestData(n int) []Data {
 // Each entry includes the ID as key "id".
 // This is optimized for cursor-based pagination in log streaming.
 // Pass sinceID="" to get all records from the beginning.
-func (m *Monitor) GetDataSince(sinceID string) []Data {
+func (m *Monitor) GetDataSince(sinceID string) []DataEntity {
 	if m.store == nil {
-		return []Data{}
+		return []DataEntity{}
 	}
 	return m.store.GetSince(sinceID)
 }

@@ -11,7 +11,7 @@ import (
 // record represents a single data record with its ID.
 type record struct {
 	id   string
-	data Data
+	data DataEntity
 }
 
 // Store is an in-memory data store that provides O(1) access by ID
@@ -42,7 +42,7 @@ func NewStore(maxRecords int) *Store {
 // UUIDv7 provides both uniqueness and time-based ordering.
 // If the store is at capacity, the oldest record is removed.
 // Returns the generated ID and any error that occurred during ID generation.
-func (s *Store) Add(data Data) (string, error) {
+func (s *Store) Add(data DataEntity) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -79,12 +79,12 @@ func (s *Store) Add(data Data) (string, error) {
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
 // Each data entry includes the ID (key "id").
 // If n is greater than the number of records, all records are returned.
-func (s *Store) GetLatest(n int) []Data {
+func (s *Store) GetLatest(n int) []DataEntity {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if n <= 0 {
-		return []Data{}
+		return []DataEntity{}
 	}
 
 	count := n
@@ -92,11 +92,11 @@ func (s *Store) GetLatest(n int) []Data {
 		count = s.order.Len()
 	}
 
-	result := make([]Data, 0, count)
+	result := make([]DataEntity, 0, count)
 	element := s.order.Back()
 	for i := 0; i < count && element != nil; i++ {
 		rec := element.Value.(*record)
-		data := make(Data, len(rec.data)+1)
+		data := make(DataEntity, len(rec.data)+1)
 		for k, v := range rec.data {
 			data[k] = v
 		}
@@ -113,11 +113,11 @@ func (s *Store) GetLatest(n int) []Data {
 // Each data entry includes the ID (key "id").
 // This is optimized for cursor-based pagination in log streaming.
 // Time complexity: O(m) where m is the number of results.
-func (s *Store) GetSince(sinceID string) []Data {
+func (s *Store) GetSince(sinceID string) []DataEntity {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	result := make([]Data, 0)
+	result := make([]DataEntity, 0)
 
 	var startElement *list.Element
 	if sinceID == "" {
@@ -144,7 +144,7 @@ func (s *Store) GetSince(sinceID string) []Data {
 	// Collect all records from startElement to the end
 	for element := startElement; element != nil; element = element.Next() {
 		rec := element.Value.(*record)
-		data := make(Data, len(rec.data)+1)
+		data := make(DataEntity, len(rec.data)+1)
 		for k, v := range rec.data {
 			data[k] = v
 		}

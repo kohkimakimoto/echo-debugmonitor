@@ -34,7 +34,7 @@ func (m *Manager) AddMonitor(mo *Monitor) {
 	if bufferSize <= 0 {
 		bufferSize = 100 // Default buffer size
 	}
-	mo.dataChan = make(chan Data, bufferSize)
+	mo.dataChan = make(chan DataEntity, bufferSize)
 
 	// Initialize the data store for this monitor
 	// The store will manage ID generation internally

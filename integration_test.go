@@ -19,7 +19,7 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 
 	// Write some data
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(Data{
+		err := mon.Write(DataEntity{
 			"message": "test message",
 			"index":   i,
 		})
@@ -94,7 +94,7 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 
 	// Write 5 records (exceeds limit of 3)
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(Data{
+		err := mon.Write(DataEntity{
 			"message": "test message",
 			"index":   i,
 		})
@@ -143,7 +143,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(goroutineID int) {
 			for j := 0; j < writesPerGoroutine; j++ {
-				mon.Write(Data{
+				mon.Write(DataEntity{
 					"goroutine": goroutineID,
 					"index":     j,
 				})

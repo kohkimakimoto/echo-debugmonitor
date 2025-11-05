@@ -11,7 +11,7 @@ func TestStore_Add(t *testing.T) {
 	// Add some records
 	ids := make([]string, 0)
 	for i := 1; i <= 3; i++ {
-		id, err := store.Add(Data{"message": "test", "index": i})
+		id, err := store.Add(DataEntity{"message": "test", "index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -45,7 +45,7 @@ func TestStore_MaxRecords(t *testing.T) {
 	// Add 5 records (exceeds limit of 3)
 	var ids []string
 	for i := 1; i <= 5; i++ {
-		id, err := store.Add(Data{"index": i})
+		id, err := store.Add(DataEntity{"index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -78,7 +78,7 @@ func TestStore_GetLatest(t *testing.T) {
 	// Add records and store their IDs
 	var ids []string
 	for i := 1; i <= 5; i++ {
-		id, err := store.Add(Data{"index": i})
+		id, err := store.Add(DataEntity{"index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -112,7 +112,7 @@ func TestStore_GetSince(t *testing.T) {
 	// Add records and store their IDs
 	var ids []string
 	for i := 1; i <= 5; i++ {
-		id, err := store.Add(Data{"index": i})
+		id, err := store.Add(DataEntity{"index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -152,7 +152,7 @@ func TestStore_GetSince_WithRemovedID(t *testing.T) {
 	// Add 5 records, but only last 3 will remain due to maxRecords limit
 	var ids []string
 	for i := 1; i <= 5; i++ {
-		id, err := store.Add(Data{"index": i})
+		id, err := store.Add(DataEntity{"index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -196,7 +196,7 @@ func TestStore_GetAll_ViaGetSince(t *testing.T) {
 	// Add records and store their IDs
 	var ids []string
 	for i := 1; i <= 5; i++ {
-		id, err := store.Add(Data{"index": i})
+		id, err := store.Add(DataEntity{"index": i})
 		if err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
@@ -222,7 +222,7 @@ func TestStore_Clear(t *testing.T) {
 
 	// Add records
 	for i := 1; i <= 5; i++ {
-		if _, err := store.Add(Data{"index": i}); err != nil {
+		if _, err := store.Add(DataEntity{"index": i}); err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
 	}
@@ -258,7 +258,7 @@ func TestStore_Concurrency(t *testing.T) {
 		go func(offset int) {
 			defer wg.Done()
 			for j := 0; j < recordsPerGoroutine; j++ {
-				if _, err := store.Add(Data{"goroutine": offset, "index": j}); err != nil {
+				if _, err := store.Add(DataEntity{"goroutine": offset, "index": j}); err != nil {
 					t.Errorf("Failed to add data: %v", err)
 				}
 			}
@@ -309,7 +309,7 @@ func TestStore_DefaultMaxRecords(t *testing.T) {
 
 	// Should use default value (1000)
 	for i := 1; i <= 1001; i++ {
-		if _, err := store.Add(Data{"index": i}); err != nil {
+		if _, err := store.Add(DataEntity{"index": i}); err != nil {
 			t.Fatalf("Failed to add data: %v", err)
 		}
 	}
