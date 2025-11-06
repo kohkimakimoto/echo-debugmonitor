@@ -29,7 +29,7 @@ async function build() {
     // Process CSS with TailwindCSS CLI
     console.log('Building CSS with TailwindCSS...');
     execSync(
-      'npx tailwindcss -i resources/assets/app.temp.css -o resources/build/assets/app.css --minify',
+      'npx @tailwindcss/cli -i resources/assets/app.temp.css -o resources/build/assets/app.css --minify',
       { stdio: 'inherit' }
     );
 
