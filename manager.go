@@ -87,8 +87,10 @@ func (m *Manager) Handler() echo.HandlerFunc {
 
 		// The following conde is for a single monitor.
 
+		viewMonitor := newViewMonitor(monitor)
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
-			"monitor": newViewMonitor(monitor),
+			"monitor": viewMonitor,
+			"title":   viewMonitor.DisplayName() + " - Echo Debug Monitor",
 		})
 	}
 }
