@@ -55,7 +55,7 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			return m, nil
 		},
 		"monitors": func(c echo.Context) (any, error) {
-			return newViewMonitorSlice(m.Monitors()), nil
+			return m.Monitors(), nil
 		},
 	}
 
@@ -87,10 +87,9 @@ func (m *Manager) Handler() echo.HandlerFunc {
 
 		// The following conde is for a single monitor.
 
-		viewMonitor := newViewMonitor(monitor)
 		return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
-			"monitor": viewMonitor,
-			"title":   viewMonitor.DisplayName() + " - Echo Debug Monitor",
+			"monitor": monitor,
+			"title":   monitor.DisplayName + " - Echo Debug Monitor",
 		})
 	}
 }
