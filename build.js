@@ -73,8 +73,8 @@ async function build() {
         ignoreCustomFragments: [/{{[\s\S]*?}}/, /{%[\s\S]*?%}/, /{#[\s\S]*?#}/],
         keepClosingSlash: true,
         minifyCSS: true,
-        removeComments: true,
         minifyJS: true,
+        removeComments: true,
       });
       fs.writeFileSync(outputPath, minifiedHtml);
     }
