@@ -8,7 +8,8 @@ type Monitor struct {
 	DisplayName string
 	// MaxRecords is the maximum number of records to keep in the data storage.
 	MaxRecords int
-	// Icon
+	// Icon is an HTML element string representing the icon for this monitor.
+	// Typically, it is an SVG string.
 	Icon string
 
 	// store is the in-memory data store for records.

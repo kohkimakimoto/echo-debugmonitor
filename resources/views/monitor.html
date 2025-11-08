@@ -1,6 +1,13 @@
 <script extract>
+  import { $data } from '../extensions/sfc';
 
+  const monitor = $data(() => ({
+    init() {
+    }
+  }));
 </script>
 
 <x-layouts.app :title="title" :monitor="monitor">
+  <div x-data="monitor" x-cloak>
+  </div>
 </x-layouts.app>
