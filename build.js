@@ -4,7 +4,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const { processCssExtraction, processScriptExtraction, processHtmlFile, cleanTempFiles } = require('./resources/extensions/sfc-build');
 const { glob } = require('glob');
-const { minify } = require('html-minifier-next');
+const { minify } = require('html-minifier-terser');
 
 async function build() {
   // Create output directories if they don't exist
