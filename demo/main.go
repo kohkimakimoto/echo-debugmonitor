@@ -18,7 +18,12 @@ func main() {
 		MaxRecords:  100,
 		Icon:        debugmonitor.IconExclamationCircle,
 		ViewHandler: func(c echo.Context, monitor *debugmonitor.Monitor) error {
-			return c.HTML(http.StatusOK, "<h1>"+c.Request().URL.Path+"</h1>")
+			switch c.QueryParam("action") {
+			case "renderMainView":
+				return c.HTML(http.StatusOK, "<h1>"+c.Request().URL.Path+"</h1>")
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest)
+			}
 		},
 	}
 	dm.AddMonitor(monitor1)
