@@ -20,7 +20,7 @@ func main() {
 		ViewHandler: func(c echo.Context, monitor *debugmonitor.Monitor) error {
 			switch c.QueryParam("action") {
 			case "renderMainView":
-				return c.HTML(http.StatusOK, "<h1>"+c.Request().URL.Path+"</h1>")
+				return c.HTML(http.StatusOK, view)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
