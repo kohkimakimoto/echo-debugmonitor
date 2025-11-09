@@ -99,8 +99,8 @@ func serveStaticFile(c echo.Context, filename string) error {
 	switch filename {
 	case "app.js":
 		return serveAsset(c, "app.js", "application/javascript")
-	case "app.css":
-		return serveAsset(c, "app.css", "text/css")
+	case "tailwindcss.js":
+		return serveAsset(c, "tailwindcss.js", "application/javascript")
 	default:
 		return echo.NewHTTPError(http.StatusNotFound)
 	}

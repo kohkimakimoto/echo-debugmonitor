@@ -1,7 +1,7 @@
 import 'htmx.org';
 import Alpine from 'alpinejs';
 import NProgress from 'nprogress';
-import { showDangerToast } from "./lib/toasts";
+import { showDangerToast } from "./toasts";
 
 // extract javascript from SFC files
 import 'extract-sfc-script:../views/**/*.html';
@@ -30,3 +30,4 @@ document.addEventListener('htmx:sendError', function (e) {
   // Show a danger toast for network errors since there is no content to display from the server
   showDangerToast('Network error occurred');
 });
+

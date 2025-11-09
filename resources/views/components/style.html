@@ -1,0 +1,179 @@
+<style type="text/tailwindcss">
+  @custom-variant dark (&:where(.dark, .dark *));
+  @layer base {
+    button:not(:disabled),
+    [role="button"]:not(:disabled) {
+      cursor: pointer;
+    }
+  }
+</style>
+
+<style type="text/css">
+  /* Hide elements until Alpine is ready */
+  [x-cloak] {
+    display: none !important;
+  }
+
+  /**
+   * Toastify js 1.12.0
+   */
+  .toastify {
+    padding: 12px 40px 12px 16px;
+    color: #ffffff;
+    display: inline-block;
+    box-shadow:
+      0 3px 6px -1px rgba(0, 0, 0, 0.12),
+      0 10px 36px -4px rgba(77, 96, 232, 0.3);
+    background: -webkit-linear-gradient(315deg, #73a5ff, #5477f5);
+    background: linear-gradient(135deg, #73a5ff, #5477f5);
+    position: fixed;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    text-decoration: none;
+    max-width: calc(70% - 20px);
+    z-index: 2147483647;
+    font-size: 0.875rem;
+  }
+
+  .toastify.on {
+    opacity: 1;
+  }
+
+  .toast-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin-top: 12px;
+    margin-right: 16px;
+    background: transparent;
+    border: 0;
+    color: white;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1em;
+    opacity: 0.8;
+  }
+
+  .toastify-right {
+    right: 15px;
+  }
+
+  .toastify-left {
+    left: 15px;
+  }
+
+  .toastify-top {
+    top: -150px;
+  }
+
+  .toastify-bottom {
+    bottom: -150px;
+  }
+
+  .toastify-rounded {
+    border-radius: 25px;
+  }
+
+  .toastify-avatar {
+    width: 1.5em;
+    height: 1.5em;
+    margin: -7px 5px;
+    border-radius: 2px;
+  }
+
+  .toastify-center {
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+    max-width: fit-content;
+  }
+
+  @media only screen and (max-width: 360px) {
+    .toastify-right,
+    .toastify-left {
+      margin-left: auto;
+      margin-right: auto;
+      left: 0;
+      right: 0;
+      max-width: fit-content;
+    }
+  }
+
+  /**
+   * NProgress
+   */
+  #nprogress {
+    pointer-events: none;
+  }
+
+  #nprogress .bar {
+    background: #29d;
+
+    position: fixed;
+    z-index: 1031;
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 2px;
+  }
+
+  /* Fancy blur effect */
+  #nprogress .peg {
+    display: block;
+    position: absolute;
+    right: 0px;
+    width: 100px;
+    height: 100%;
+    box-shadow: 0 0 10px #29d, 0 0 5px #29d;
+    opacity: 1.0;
+
+    -webkit-transform: rotate(3deg) translate(0px, -4px);
+    -ms-transform: rotate(3deg) translate(0px, -4px);
+    transform: rotate(3deg) translate(0px, -4px);
+  }
+
+  #nprogress .spinner {
+    display: block;
+    position: fixed;
+    z-index: 1031;
+    top: 15px;
+    right: 15px;
+  }
+
+  #nprogress .spinner-icon {
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+
+    border: solid 2px transparent;
+    border-top-color: #29d;
+    border-left-color: #29d;
+    border-radius: 50%;
+
+    -webkit-animation: nprogress-spinner 400ms linear infinite;
+    animation: nprogress-spinner 400ms linear infinite;
+  }
+
+  .nprogress-custom-parent {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .nprogress-custom-parent #nprogress .spinner,
+  .nprogress-custom-parent #nprogress .bar {
+    position: absolute;
+  }
+
+  @-webkit-keyframes nprogress-spinner {
+    0%   { -webkit-transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); }
+  }
+  @keyframes nprogress-spinner {
+    0%   { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>

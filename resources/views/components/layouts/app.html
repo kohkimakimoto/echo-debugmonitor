@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ title }}</title>
   <x-mode-init></x-mode-init>
-  <link rel="stylesheet" href="?file=app.css" />
+  <script src="?file=tailwindcss.js"></script>
   <script src="?file=app.js" defer></script>
+  <x-style></x-style>
 </head>
 <body class="antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100" hx-boost="true" hx-history="false" hx-target="#app" hx-select="#app">
   <div id="app">
