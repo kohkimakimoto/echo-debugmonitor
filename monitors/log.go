@@ -12,6 +12,6 @@ type LogMonitorConfig struct {
 type LoggerAdapter struct {
 }
 
-func LogMonitor(config LogMonitorConfig) (*debugmonitor.Monitor, echo.Logger) {
+func NewLogMonitor(config *LogMonitorConfig) (*debugmonitor.Monitor, echo.Logger) {
 	return nil, nil
 }
