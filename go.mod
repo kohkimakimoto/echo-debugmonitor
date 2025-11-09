@@ -3,12 +3,12 @@ module github.com/kohkimakimoto/echo-debugmonitor
 go 1.23.0
 
 require (
-	github.com/google/uuid v1.6.0
 	github.com/kohkimakimoto/echo-viewkit v0.9.0
 	github.com/labstack/echo/v4 v4.13.4
 )
 
 require (
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/kohkimakimoto/go-subprocess v0.2.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
