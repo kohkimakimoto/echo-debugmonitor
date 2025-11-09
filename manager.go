@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
@@ -96,9 +97,14 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			action := c.QueryParam("action")
 			if action == "read" {
 				// TODO: read records as JSON
-				return c.JSON(http.StatusOK, map[string]any{
-					"entries": monitor.store.GetLatest(10),
-				})
+				entries := monitor.store.GetLatest(10)
+				var rows []string
+				for _, entry := range entries {
+					row := monitor.TableRowRenderer(c, entry)
+					rows = append(rows, row)
+
+				}
+				return c.HTML(http.StatusOK, strings.Join(rows, "\n"))
 			}
 
 			// render a monitor page
