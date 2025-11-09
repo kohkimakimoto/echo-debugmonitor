@@ -61,12 +61,10 @@ func (m *Manager) Handler() echo.HandlerFunc {
 		"manager": func(c echo.Context) (any, error) {
 			return m, nil
 		},
-		"monitors": func(c echo.Context) (any, error) {
-			return m.Monitors(), nil
-		},
 	}
 
 	r := v.MustRenderer()
+
 	h := func(c echo.Context) error {
 		if c.Request().Method == http.MethodGet {
 			// Check if a file query parameter is present
@@ -100,7 +98,11 @@ func (m *Manager) Handler() echo.HandlerFunc {
 				}
 
 				// sub request for monitor content
-				return monitor.ViewHandler(c, monitor)
+				return monitor.ViewHandler(&MonitorViewContext{
+					ctx:      c,
+					monitor:  monitor,
+					renderer: r,
+				})
 			}
 
 			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{

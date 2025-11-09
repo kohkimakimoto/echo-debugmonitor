@@ -21,7 +21,7 @@
         {# navigation #}
         <nav class="flex-1 overflow-y-auto p-3">
           <ul class="space-y-0.5">
-            {% for m in monitors %}
+            {% for m in manager.Monitors %}
               <li>
                 <a
                   href="{{ url_path }}?monitor={{ m.Name }}"

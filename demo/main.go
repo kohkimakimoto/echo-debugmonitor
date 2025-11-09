@@ -17,10 +17,10 @@ func main() {
 		DisplayName: "Requests",
 		MaxRecords:  100,
 		Icon:        debugmonitor.IconExclamationCircle,
-		ViewHandler: func(c echo.Context, monitor *debugmonitor.Monitor) error {
-			switch c.QueryParam("action") {
+		ViewHandler: func(ctx *debugmonitor.MonitorViewContext) error {
+			switch ctx.EchoContext().QueryParam("action") {
 			case "renderMainView":
-				return c.HTML(http.StatusOK, view)
+				return ctx.Render(http.StatusOK, mainView, nil)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -53,7 +53,7 @@ func main() {
 	}
 }
 
-const view = `
+const mainView = `
 <div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
   <table class="w-full">
     <thead>
