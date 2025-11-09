@@ -42,6 +42,10 @@ func (m *Monitor) Write(payload any) {
 	m.store.Add(payload)
 }
 
+func (m *Monitor) Store() *Store {
+	return m.store
+}
+
 func ExecuteMonitoTemplateString(body string, data pongo2.Context) (string, error) {
 	tpl, err := monitorTemplateSet.FromBytes([]byte(body))
 	if err != nil {
