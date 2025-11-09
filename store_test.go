@@ -10,10 +10,7 @@ func TestStore_Add(t *testing.T) {
 
 	// Add some records
 	for i := 1; i <= 3; i++ {
-		err := store.Add(map[string]any{"message": "test", "index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"message": "test", "index": i})
 	}
 
 	if store.Len() != 3 {
@@ -21,20 +18,21 @@ func TestStore_Add(t *testing.T) {
 	}
 
 	// Get all records and verify IDs
-	allData := store.GetSince("")
+	allData := store.GetSince(0)
 	if len(allData) != 3 {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
-	// Verify all IDs are unique and valid UUIDs
-	seen := make(map[string]bool)
-	for _, entry := range allData {
-		// UUIDv7 should be a valid UUID string (36 characters)
-		if len(entry.Id) != 36 {
-			t.Errorf("Expected UUID length 36, got %d", len(entry.Id))
+	// Verify all IDs are unique and sequential
+	seen := make(map[int64]bool)
+	for i, entry := range allData {
+		// IDs should start from 1 and increment
+		expectedID := int64(i + 1)
+		if entry.Id != expectedID {
+			t.Errorf("Expected ID %d, got %d", expectedID, entry.Id)
 		}
 		if seen[entry.Id] {
-			t.Errorf("Duplicate ID found: %s", entry.Id)
+			t.Errorf("Duplicate ID found: %d", entry.Id)
 		}
 		seen[entry.Id] = true
 	}
@@ -48,10 +46,7 @@ func TestStore_MaxRecords(t *testing.T) {
 
 	// Add 5 records (exceeds limit of 3)
 	for i := 1; i <= 5; i++ {
-		err := store.Add(map[string]any{"index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
 	// Should only have 3 records
@@ -60,7 +55,7 @@ func TestStore_MaxRecords(t *testing.T) {
 	}
 
 	// Get all records and verify only the newest 3 remain
-	allData := store.GetSince("")
+	allData := store.GetSince(0)
 	if len(allData) != 3 {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
@@ -80,15 +75,12 @@ func TestStore_GetLatest(t *testing.T) {
 
 	// Add records
 	for i := 1; i <= 5; i++ {
-		err := store.Add(map[string]any{"index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
 	// Get all records first to extract IDs
-	allData := store.GetSince("")
-	var ids []string
+	allData := store.GetSince(0)
+	var ids []int64
 	for _, entry := range allData {
 		ids = append(ids, entry.Id)
 	}
@@ -100,10 +92,10 @@ func TestStore_GetLatest(t *testing.T) {
 	}
 
 	// Should be in reverse chronological order (newest first)
-	expectedIDs := []string{ids[4], ids[3], ids[2]}
+	expectedIDs := []int64{ids[4], ids[3], ids[2]}
 	for i, entry := range latest {
 		if entry.Id != expectedIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, entry.Id)
 		}
 	}
 
@@ -119,15 +111,12 @@ func TestStore_GetSince(t *testing.T) {
 
 	// Add records
 	for i := 1; i <= 5; i++ {
-		err := store.Add(map[string]any{"index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
 	// Get all records first to extract IDs
-	allData := store.GetSince("")
-	var ids []string
+	allData := store.GetSince(0)
+	var ids []int64
 	for _, entry := range allData {
 		ids = append(ids, entry.Id)
 	}
@@ -139,15 +128,15 @@ func TestStore_GetSince(t *testing.T) {
 	}
 
 	// Should be in chronological order
-	expectedIDs := []string{ids[2], ids[3], ids[4]}
+	expectedIDs := []int64{ids[2], ids[3], ids[4]}
 	for i, entry := range since {
 		if entry.Id != expectedIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, entry.Id)
 		}
 	}
 
-	// Get since empty string (all records)
-	since = store.GetSince("")
+	// Get since 0 (all records)
+	since = store.GetSince(0)
 	if len(since) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(since))
 	}
@@ -163,14 +152,11 @@ func TestStore_GetSince_WithRemovedID(t *testing.T) {
 	store := NewStore(3)
 
 	// Add 5 records and capture IDs after each addition
-	var ids []string
+	var ids []int64
 	for i := 1; i <= 5; i++ {
-		err := store.Add(map[string]any{"index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 		// Get all records to capture the latest ID
-		allData := store.GetSince("")
+		allData := store.GetSince(0)
 		if len(allData) > 0 {
 			// Get the last added ID
 			lastID := allData[len(allData)-1].Id
@@ -185,10 +171,10 @@ func TestStore_GetSince_WithRemovedID(t *testing.T) {
 		t.Errorf("Expected 3 records, got %d", len(since))
 	}
 
-	expectedIDs := []string{ids[2], ids[3], ids[4]}
+	expectedIDs := []int64{ids[2], ids[3], ids[4]}
 	for i, entry := range since {
 		if entry.Id != expectedIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, entry.Id)
 		}
 	}
 
@@ -199,40 +185,39 @@ func TestStore_GetSince_WithRemovedID(t *testing.T) {
 		t.Errorf("Expected 2 records, got %d", len(since))
 	}
 
-	expectedIDs = []string{ids[3], ids[4]}
+	expectedIDs = []int64{ids[3], ids[4]}
 	for i, entry := range since {
 		if entry.Id != expectedIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, entry.Id)
 		}
 	}
 }
 
 // TestStore_GetAll is removed because GetAll method is no longer needed.
-// Use GetSince("") to get all records instead.
+// Use GetSince(0) to get all records instead.
 func TestStore_GetAll_ViaGetSince(t *testing.T) {
 	store := NewStore(10)
 
 	// Add records
 	for i := 1; i <= 5; i++ {
-		err := store.Add(map[string]any{"index": i})
-		if err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
-	// GetSince("") should return all records
-	all := store.GetSince("")
+	// GetSince(0) should return all records
+	all := store.GetSince(0)
 	if len(all) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(all))
 	}
 
 	// Verify all records have valid IDs and are in chronological order
-	var prevID string
+	var prevID int64
 	for i, entry := range all {
-		if len(entry.Id) != 36 {
-			t.Errorf("Expected UUID length 36 at position %d, got %d", i, len(entry.Id))
+		// IDs should start from 1
+		expectedID := int64(i + 1)
+		if entry.Id != expectedID {
+			t.Errorf("Expected ID %d at position %d, got %d", expectedID, i, entry.Id)
 		}
-		// UUIDv7 is time-ordered, so IDs should be in ascending order
+		// IDs should be in ascending order
 		if i > 0 && entry.Id <= prevID {
 			t.Errorf("IDs not in chronological order at position %d", i)
 		}
@@ -245,9 +230,7 @@ func TestStore_Clear(t *testing.T) {
 
 	// Add records
 	for i := 1; i <= 5; i++ {
-		if err := store.Add(map[string]any{"index": i}); err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
 	if store.Len() != 5 {
@@ -261,8 +244,8 @@ func TestStore_Clear(t *testing.T) {
 		t.Errorf("Expected 0 records after clear, got %d", store.Len())
 	}
 
-	// Verify records are actually gone by checking GetSince("")
-	allData := store.GetSince("")
+	// Verify records are actually gone by checking GetSince(0)
+	allData := store.GetSince(0)
 	if len(allData) != 0 {
 		t.Error("Records should not exist after clear")
 	}
@@ -281,9 +264,7 @@ func TestStore_Concurrency(t *testing.T) {
 		go func(offset int) {
 			defer wg.Done()
 			for j := 0; j < recordsPerGoroutine; j++ {
-				if err := store.Add(map[string]any{"goroutine": offset, "index": j}); err != nil {
-					t.Errorf("Failed to add data: %v", err)
-				}
+				store.Add(map[string]any{"goroutine": offset, "index": j})
 			}
 		}(i)
 	}
@@ -297,11 +278,11 @@ func TestStore_Concurrency(t *testing.T) {
 	}
 
 	// Verify all IDs are unique
-	allData := store.GetSince("")
-	seen := make(map[string]bool)
+	allData := store.GetSince(0)
+	seen := make(map[int64]bool)
 	for _, entry := range allData {
 		if seen[entry.Id] {
-			t.Errorf("Duplicate ID found: %s", entry.Id)
+			t.Errorf("Duplicate ID found: %d", entry.Id)
 		}
 		seen[entry.Id] = true
 	}
@@ -316,7 +297,7 @@ func TestStore_Concurrency(t *testing.T) {
 			if len(latest) > 0 {
 				_ = store.GetSince(latest[0].Id)
 			}
-			_ = store.GetSince("")
+			_ = store.GetSince(0)
 		}()
 	}
 
@@ -329,9 +310,7 @@ func TestStore_DefaultMaxRecords(t *testing.T) {
 
 	// Should use default value (1000)
 	for i := 1; i <= 1001; i++ {
-		if err := store.Add(map[string]any{"index": i}); err != nil {
-			t.Fatalf("Failed to add data: %v", err)
-		}
+		store.Add(map[string]any{"index": i})
 	}
 
 	// Should have default max (1000) records

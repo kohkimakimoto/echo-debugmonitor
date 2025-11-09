@@ -32,14 +32,14 @@ type Monitor struct {
 	store *Store
 }
 
-func (m *Monitor) Write(payload any) error {
+func (m *Monitor) Write(payload any) {
 	if m.store == nil {
 		// noop if the store is not initialized
 		// It means the monitor is not connected to a Manager
-		return nil
+		return
 	}
 
-	return m.store.Add(payload)
+	m.store.Add(payload)
 }
 
 func ExecuteMonitoTemplateString(body string, data pongo2.Context) (string, error) {

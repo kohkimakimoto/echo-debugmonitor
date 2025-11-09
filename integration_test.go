@@ -18,26 +18,23 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 
 	// Write some data
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(map[string]any{
+		mon.Write(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
-		if err != nil {
-			t.Fatalf("Failed to write data: %v", err)
-		}
 	}
 
 	// Give the goroutine time to process
 	time.Sleep(100 * time.Millisecond)
 
-	// Verify data was stored using store.GetSince("") which returns all records
-	allData := mon.store.GetSince("")
+	// Verify data was stored using store.GetSince(0) which returns all records
+	allData := mon.store.GetSince(0)
 	if len(allData) != 5 {
 		t.Errorf("Expected 5 records, got %d", len(allData))
 	}
 
 	// Store IDs for later verification
-	var ids []string
+	var ids []int64
 	for _, entry := range allData {
 		ids = append(ids, entry.Id)
 	}
@@ -49,24 +46,24 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 	}
 
 	// Should be in reverse order (newest first)
-	expectedIDs := []string{ids[4], ids[3], ids[2]}
+	expectedIDs := []int64{ids[4], ids[3], ids[2]}
 	for i, entry := range latest {
 		if entry.Id != expectedIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedIDs[i], i, entry.Id)
 		}
 	}
 
 	// Test store.GetSince for cursor-based pagination
 	since := mon.store.GetSince(ids[1])
 	if len(since) != 3 {
-		t.Errorf("Expected 3 records since ID %s, got %d", ids[1], len(since))
+		t.Errorf("Expected 3 records since ID %d, got %d", ids[1], len(since))
 	}
 
 	// Should be in chronological order
-	expectedSinceIDs := []string{ids[2], ids[3], ids[4]}
+	expectedSinceIDs := []int64{ids[2], ids[3], ids[4]}
 	for i, entry := range since {
 		if entry.Id != expectedSinceIDs[i] {
-			t.Errorf("Expected ID %s at position %d, got %v", expectedSinceIDs[i], i, entry.Id)
+			t.Errorf("Expected ID %d at position %d, got %v", expectedSinceIDs[i], i, entry.Id)
 		}
 		// Verify data structure
 		payload := entry.Payload.(map[string]any)
@@ -89,28 +86,25 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 
 	// Write 5 records (exceeds limit of 3)
 	for i := 1; i <= 5; i++ {
-		err := mon.Write(map[string]any{
+		mon.Write(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
-		if err != nil {
-			t.Fatalf("Failed to write data: %v", err)
-		}
 	}
 
 	// Give the goroutine time to process all records
 	time.Sleep(100 * time.Millisecond)
 
 	// Should only have 3 records (the most recent ones)
-	allData := mon.store.GetSince("")
+	allData := mon.store.GetSince(0)
 	if len(allData) != 3 {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
-	// Verify we have 3 records with valid UUIDs
+	// Verify we have 3 records with valid int64 IDs
 	for i, entry := range allData {
-		if len(entry.Id) != 36 {
-			t.Errorf("Expected UUID length 36 at position %d, got %d", i, len(entry.Id))
+		if entry.Id <= 0 {
+			t.Errorf("Expected positive ID at position %d, got %d", i, entry.Id)
 		}
 	}
 }
@@ -151,20 +145,20 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Verify all records were stored
-	allData := mon.store.GetSince("")
+	allData := mon.store.GetSince(0)
 	expectedCount := numGoroutines * writesPerGoroutine
 	if len(allData) != expectedCount {
 		t.Errorf("Expected %d records, got %d", expectedCount, len(allData))
 	}
 
-	// Verify all IDs are unique UUIDs
-	seen := make(map[string]bool)
+	// Verify all IDs are unique and positive
+	seen := make(map[int64]bool)
 	for _, entry := range allData {
 		if seen[entry.Id] {
-			t.Errorf("Duplicate ID found: %s", entry.Id)
+			t.Errorf("Duplicate ID found: %d", entry.Id)
 		}
-		if len(entry.Id) != 36 {
-			t.Errorf("Expected UUID length 36, got %d", len(entry.Id))
+		if entry.Id <= 0 {
+			t.Errorf("Expected positive ID, got %d", entry.Id)
 		}
 		seen[entry.Id] = true
 	}

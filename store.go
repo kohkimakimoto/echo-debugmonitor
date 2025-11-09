@@ -2,27 +2,25 @@ package debugmonitor
 
 import (
 	"container/list"
-	"fmt"
 	"sync"
-
-	"github.com/google/uuid"
 )
 
 // DataEntry represents a single data record with its ID.
 type DataEntry struct {
-	Id      string
+	Id      int64
 	Payload any
 }
 
 // Store is an in-memory data store that provides O(1) access by ID
 // while maintaining insertion order like a linked hash map.
 // It automatically removes old records when the maximum capacity is reached.
-// It generates UUIDv7 IDs internally to guarantee uniqueness and time-based ordering.
+// It uses auto-incrementing int64 IDs to guarantee uniqueness and ordering.
 type Store struct {
 	mu         sync.RWMutex
 	maxRecords int
-	entries    map[string]*list.Element // map for O(1) access by ID
-	order      *list.List               // doubly linked list to maintain insertion order
+	nextID     int64                   // auto-incrementing ID counter
+	entries    map[int64]*list.Element // map for O(1) access by ID
+	order      *list.List              // doubly linked list to maintain insertion order
 }
 
 // NewStore creates a new Store with the specified maximum number of records.
@@ -33,32 +31,29 @@ func NewStore(maxRecords int) *Store {
 	}
 	return &Store{
 		maxRecords: maxRecords,
-		entries:    make(map[string]*list.Element),
+		nextID:     1, // Start IDs from 1
+		entries:    make(map[int64]*list.Element),
 		order:      list.New(),
 	}
 }
 
-// Add adds a new record to the store with an auto-generated UUIDv7 ID.
-// UUIDv7 provides both uniqueness and time-based ordering.
+// Add adds a new record to the store with an auto-incrementing int64 ID.
+// The ID starts from 1 and increments for each new record.
 // If the store is at capacity, the oldest record is removed.
-// Returns any error that occurred during ID generation.
-func (s *Store) Add(payload any) error {
+func (s *Store) Add(payload any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Generate a new UUIDv7 ID
-	id, err := uuid.NewV7()
-	if err != nil {
-		return fmt.Errorf("failed to generate UUID: %w", err)
-	}
+	// Use auto-incrementing ID
+	id := s.nextID
+	s.nextID++
 
 	entry := &DataEntry{
-		Id:      id.String(),
+		Id:      id,
 		Payload: payload,
 	}
 
-	// Since UUIDv7 IDs are time-ordered, new IDs maintain chronological order.
-	// Simply add to the end of the list for O(1) insertion.
+	// Add to the end of the list for O(1) insertion
 	element := s.order.PushBack(entry)
 
 	s.entries[entry.Id] = element
@@ -72,8 +67,6 @@ func (s *Store) Add(payload any) error {
 			s.order.Remove(oldest)
 		}
 	}
-
-	return nil
 }
 
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
@@ -106,15 +99,15 @@ func (s *Store) GetLatest(n int) []*DataEntry {
 // in chronological order (oldest first).
 // This is optimized for cursor-based pagination in log streaming.
 // Time complexity: O(m) where m is the number of results.
-func (s *Store) GetSince(sinceID string) []*DataEntry {
+func (s *Store) GetSince(sinceID int64) []*DataEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	result := make([]*DataEntry, 0)
 
 	var startElement *list.Element
-	if sinceID == "" {
-		// Start from the beginning if sinceID is empty
+	if sinceID == 0 {
+		// Start from the beginning if sinceID is 0
 		startElement = s.order.Front()
 	} else {
 		// Find the element with sinceID and start from the next one
@@ -123,7 +116,6 @@ func (s *Store) GetSince(sinceID string) []*DataEntry {
 		} else {
 			// If sinceID doesn't exist, find the first element with ID > sinceID
 			// This handles the case where sinceID was already removed from the store
-			// Since UUIDv7 is time-ordered, we can use string comparison
 			for element := s.order.Front(); element != nil; element = element.Next() {
 				entry := element.Value.(*DataEntry)
 				if entry.Id > sinceID {
@@ -146,7 +138,7 @@ func (s *Store) GetSince(sinceID string) []*DataEntry {
 // GetById returns a single data entry by its ID.
 // Returns nil if the entry is not found.
 // Time complexity: O(1).
-func (s *Store) GetById(id string) *DataEntry {
+func (s *Store) GetById(id int64) *DataEntry {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -168,6 +160,7 @@ func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.entries = make(map[string]*list.Element)
+	s.nextID = 1
+	s.entries = make(map[int64]*list.Element)
 	s.order.Init()
 }

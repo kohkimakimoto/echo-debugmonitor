@@ -42,7 +42,7 @@ func main() {
 		for range ticker.C {
 			currentTime := time.Now().Format("2006-01-02 15:04:05")
 
-			_ = monitor1.Write(map[string]any{
+			monitor1.Write(map[string]any{
 				"time": currentTime,
 			})
 		}
