@@ -19,24 +19,10 @@ async function build() {
   }
 
   try {
-    // // Process SFC CSS extraction
-    // console.log('Extracting SFC CSS...');
-    // processCssExtraction(
-    //   'resources/assets/app.css',
-    //   'resources/assets/app.temp.css'
-    // );
-    //
-    // // Process CSS with TailwindCSS CLI
-    // console.log('Building CSS with TailwindCSS...');
-    // execSync(
-    //   'npx @tailwindcss/cli -i resources/assets/app.temp.css -o resources/build/assets/app.css --minify',
-    //   { stdio: 'inherit' }
-    // );
-
-    // Copy tailwind runtime
+    // Copy tailwindcss runtime
     console.log('Copying TailwindCSS runtime...');
     fs.copyFileSync(
-      'resources/assets/tailwindcss.js',
+      'resources/assets/static/tailwindcss.js',
       'resources/build/assets/tailwindcss.js'
     );
 
