@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/kohkimakimoto/echo-debugmonitor/pkg/htmx"
+	"github.com/kohkimakimoto/echo-debugmonitor/internal/htmx"
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
