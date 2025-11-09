@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
@@ -96,21 +95,28 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			// The following conde is for a single monitor.
 			action := c.QueryParam("action")
 			if action == "read" {
-				// TODO: read records as JSON
-				entries := monitor.store.GetLatest(10)
-				var rows []string
-				for _, entry := range entries {
-					row := monitor.TableRowRenderer(c, entry)
-					rows = append(rows, row)
-
-				}
-				return c.HTML(http.StatusOK, strings.Join(rows, "\n"))
+				// TODO:
+				return c.HTML(http.StatusOK, "")
 			}
 
 			// render a monitor page
+
+			var monitorView string
+			if monitor.Renderer == nil {
+				monitorView = `<div class="text-red-500">No renderer is defined for this monitor.</div>`
+			} else {
+				_monitorView, err := monitor.Renderer(c, monitor)
+				if err != nil {
+					monitorView = `<div class="text-red-500">` + err.Error() + `</div>`
+				} else {
+					monitorView = _monitorView
+				}
+			}
+
 			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
-				"monitor": monitor,
-				"title":   monitor.DisplayName + " - Echo Debug Monitor",
+				"monitor":     monitor,
+				"monitorView": monitorView,
+				"title":       monitor.DisplayName + " - Echo Debug Monitor",
 			})
 		}
 

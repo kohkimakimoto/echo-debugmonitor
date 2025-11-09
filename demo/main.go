@@ -16,14 +16,8 @@ func main() {
 		DisplayName: "Requests",
 		MaxRecords:  100,
 		Icon:        debugmonitor.IconExclamationCircle,
-		TableHeader: `<thead><tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>th]:px-4 [&>th]:py-2 [&>th]:text-sm [&>th]:font-semibold [&>th]:table-cell"><th>Id</th><th>Time</th></tr></thead>`,
-		TableRowRenderer: func(c echo.Context, dataEntry *debugmonitor.DataEntry) string {
-			payloadMap, ok := dataEntry.Payload.(map[string]any)
-			if !ok {
-				return ""
-			}
-			timeValue, _ := payloadMap["time"].(string)
-			return `<tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>td]:px-4 [&>td]:py-2 [&>td]:text-sm [&>td]:table-cell"><td>` + dataEntry.Id + `</td><td>` + timeValue + `</td></tr>`
+		Renderer: func(c echo.Context, monitor *debugmonitor.Monitor) (string, error) {
+			return debugmonitor.ExecuteMonitoTemplateString(`aaaa`, nil)
 		},
 	}
 	dm.AddMonitor(monitor1)

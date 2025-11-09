@@ -1,1 +1,1 @@
-<x-layouts.app :title="title" :monitor="monitor"><div x-data="scope_f4da5aee_monitor({name: '{{ monitor.Name }}'})" x-cloak><div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200"><table class="w-full"> {{ monitor.TableHeader|safe }} <tbody hx-get="?monitor={{ monitor.Name }}&action=read" hx-trigger="load" hx-swap="afterbegin" hx-target="this" hx-select="unset"></tbody></table></div></div></x-layouts.app>
+<x-layouts.app :title="title" :monitor="monitor"> {{ monitorView|safe }} </x-layouts.app>
