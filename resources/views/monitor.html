@@ -1,13 +1,20 @@
 <script extract>
   import { $data } from '../extensions/sfc';
+  import httpClient from "../assets/httpClient";
 
-  const monitor = $data(() => ({
+  const monitor = $data(({name}) => ({
     init() {
+      this.fetchLatest()
+    },
+
+    async fetchLatest() {
+      const response = await httpClient.get(`?monitor=${name}&action=read`);
+      
     }
   }));
 </script>
 
 <x-layouts.app :title="title" :monitor="monitor">
-  <div x-data="monitor" x-cloak>
+  <div x-data="monitor({name: '{{ monitor.Name }}'})" x-cloak>
   </div>
 </x-layouts.app>
