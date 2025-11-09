@@ -96,7 +96,9 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			action := c.QueryParam("action")
 			if action == "read" {
 				// TODO: read records as JSON
-				return c.JSON(http.StatusOK, map[string]any{})
+				return c.JSON(http.StatusOK, map[string]any{
+					"entries": monitor.store.GetLatest(10),
+				})
 			}
 
 			// render a monitor page

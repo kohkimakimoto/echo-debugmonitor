@@ -14,6 +14,7 @@ func main() {
 		DisplayName: "Requests",
 		MaxRecords:  100,
 		Icon:        debugmonitor.IconExclamationCircle,
+		TableHeader: `<thead><tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>th]:px-4 [&>th]:py-2 [&>th]:text-sm [&>th]:font-semibold [&>th]:table-cell"><th>Id</th><th>Time</th></tr></thead>`,
 	}
 	dm.AddMonitor(monitor1)
 	monitor2 := &debugmonitor.Monitor{

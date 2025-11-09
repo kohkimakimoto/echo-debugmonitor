@@ -11,7 +11,8 @@ type Monitor struct {
 	// Icon is an HTML element string representing the icon for this monitor.
 	// Typically, it is an SVG string.
 	Icon string
-
+	// TableHeader is an HTML element string representing the table header row for this monitor.
+	TableHeader string
 	// store is the in-memory data store for records.
 	store *Store
 }

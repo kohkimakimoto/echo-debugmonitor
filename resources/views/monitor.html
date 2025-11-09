@@ -8,13 +8,21 @@
     },
 
     async fetchLatest() {
-      const response = await httpClient.get(`?monitor=${name}&action=read`);
-      
+      const jsonData = await httpClient.get(`?monitor=${name}&action=read`).json();
+      console.log(jsonData);
     }
   }));
 </script>
 
 <x-layouts.app :title="title" :monitor="monitor">
   <div x-data="monitor({name: '{{ monitor.Name }}'})" x-cloak>
+    <div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
+      <table class="w-full">
+        {{ monitor.TableHeader|safe }}
+        <tbody>
+          
+        </tbody>
+      </table>
+    </div>
   </div>
 </x-layouts.app>

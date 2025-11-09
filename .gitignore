@@ -15,4 +15,7 @@ node_modules/
 *.temp.js
 *.temp.css
 
+# demo binary
+/demo/demo
+
 !.gitkeep
