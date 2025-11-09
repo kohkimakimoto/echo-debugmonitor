@@ -1,1 +1,1 @@
-<x-layouts.app :title="title" :monitor="monitor"> {{ monitorView|safe }} </x-layouts.app>
+<x-layouts.app :title="title" :monitor="monitor"><div hx-get="?monitor={{ monitor.Name }}&action=renderMainView" hx-trigger="load" hx-swap="innerHTML" hx-select="unset" hx-target="this"></div></x-layouts.app>

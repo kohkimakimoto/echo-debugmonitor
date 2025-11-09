@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/kohkimakimoto/echo-debugmonitor/pkg/htmx"
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
@@ -66,7 +67,6 @@ func (m *Manager) Handler() echo.HandlerFunc {
 	}
 
 	r := v.MustRenderer()
-
 	h := func(c echo.Context) error {
 		if c.Request().Method == http.MethodGet {
 			// Check if a file query parameter is present
@@ -92,31 +92,20 @@ func (m *Manager) Handler() echo.HandlerFunc {
 				return c.Redirect(http.StatusFound, c.Path())
 			}
 
-			// The following conde is for a single monitor.
-			action := c.QueryParam("action")
-			if action == "read" {
-				// TODO:
-				return c.HTML(http.StatusOK, "")
-			}
-
-			// render a monitor page
-
-			var monitorView string
-			if monitor.Renderer == nil {
-				monitorView = `<div class="text-red-500">No renderer is defined for this monitor.</div>`
-			} else {
-				_monitorView, err := monitor.Renderer(c, monitor)
-				if err != nil {
-					monitorView = `<div class="text-red-500">` + err.Error() + `</div>`
-				} else {
-					monitorView = _monitorView
+			if htmx.IsHxRequest(c) && !htmx.IsHxBoosted(c) {
+				if monitor.ViewHandler == nil {
+					return c.JSON(http.StatusInternalServerError, map[string]any{
+						"error": "Monitor " + monitor.Name + " does not have a ViewHandler defined.",
+					})
 				}
+
+				// sub request for monitor content
+				return monitor.ViewHandler(c, monitor)
 			}
 
 			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
-				"monitor":     monitor,
-				"monitorView": monitorView,
-				"title":       monitor.DisplayName + " - Echo Debug Monitor",
+				"monitor": monitor,
+				"title":   monitor.DisplayName + " - Echo Debug Monitor",
 			})
 		}
 

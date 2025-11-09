@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"time"
 
 	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
@@ -16,8 +17,8 @@ func main() {
 		DisplayName: "Requests",
 		MaxRecords:  100,
 		Icon:        debugmonitor.IconExclamationCircle,
-		Renderer: func(c echo.Context, monitor *debugmonitor.Monitor) (string, error) {
-			return debugmonitor.ExecuteMonitoTemplateString(`aaaa`, nil)
+		ViewHandler: func(c echo.Context, monitor *debugmonitor.Monitor) error {
+			return c.HTML(http.StatusOK, "<h1>"+c.Request().URL.Path+"</h1>")
 		},
 	}
 	dm.AddMonitor(monitor1)
@@ -46,3 +47,18 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 }
+
+const view = `
+<div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
+  <table class="w-full">
+    <thead>
+      <tr class="border-b dark:bg-gray-700 bg-gray-50 dark:border-b-gray-700 border-b-gray-200 [&>th]:px-4 [&>th]:py-2 [&>th]:text-sm [&>th]:font-semibold [&>th]:table-cell">
+        <th>Id</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+  </table>
+</div>
+`
