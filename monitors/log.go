@@ -9,6 +9,9 @@ type LogMonitorConfig struct {
 	Logger echo.Logger
 }
 
+type LoggerAdapter struct {
+}
+
 func LogMonitor(config LogMonitorConfig) (*debugmonitor.Monitor, echo.Logger) {
 	return nil, nil
 }
