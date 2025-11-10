@@ -14,11 +14,11 @@ type DataEntry struct {
 // Store is an in-memory data store that provides O(1) access by ID
 // while maintaining insertion order like a linked hash map.
 // It automatically removes old records when the maximum capacity is reached.
-// It uses auto-incrementing int64 IDs to guarantee uniqueness and ordering.
+// It uses Snowflake-style int64 IDs to guarantee uniqueness and ordering.
 type Store struct {
 	mu         sync.RWMutex
 	maxRecords int
-	nextID     int64                   // auto-incrementing ID counter
+	idGen      *IDGenerator            // Snowflake-style ID generator
 	entries    map[int64]*list.Element // map for O(1) access by ID
 	order      *list.List              // doubly linked list to maintain insertion order
 }
@@ -31,22 +31,21 @@ func NewStore(maxRecords int) *Store {
 	}
 	return &Store{
 		maxRecords: maxRecords,
-		nextID:     1, // Start IDs from 1
+		idGen:      NewIDGenerator(),
 		entries:    make(map[int64]*list.Element),
 		order:      list.New(),
 	}
 }
 
-// Add adds a new record to the store with an auto-incrementing int64 ID.
-// The ID starts from 1 and increments for each new record.
+// Add adds a new record to the store with a Snowflake-style int64 ID.
+// The ID is generated using a time-based algorithm for uniqueness and ordering.
 // If the store is at capacity, the oldest record is removed.
 func (s *Store) Add(payload any) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Use auto-incrementing ID
-	id := s.nextID
-	s.nextID++
+	// Generate Snowflake-style ID
+	id := s.idGen.Generate()
 
 	entry := &DataEntry{
 		Id:      id,
@@ -160,7 +159,7 @@ func (s *Store) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.nextID = 1
+	s.idGen = NewIDGenerator()
 	s.entries = make(map[int64]*list.Element)
 	s.order.Init()
 }

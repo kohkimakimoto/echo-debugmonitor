@@ -23,18 +23,24 @@ func TestStore_Add(t *testing.T) {
 		t.Errorf("Expected 3 records, got %d", len(allData))
 	}
 
-	// Verify all IDs are unique and sequential
+	// Verify all IDs are unique and in ascending order (Snowflake IDs)
 	seen := make(map[int64]bool)
-	for i, entry := range allData {
-		// IDs should start from 1 and increment
-		expectedID := int64(i + 1)
-		if entry.Id != expectedID {
-			t.Errorf("Expected ID %d, got %d", expectedID, entry.Id)
+	var prevID int64 = 0
+	for _, entry := range allData {
+		// IDs should be positive
+		if entry.Id <= 0 {
+			t.Errorf("Expected positive ID, got %d", entry.Id)
 		}
+		// IDs should be unique
 		if seen[entry.Id] {
 			t.Errorf("Duplicate ID found: %d", entry.Id)
 		}
+		// IDs should be in ascending order
+		if entry.Id <= prevID {
+			t.Errorf("IDs not in ascending order: prev=%d, current=%d", prevID, entry.Id)
+		}
 		seen[entry.Id] = true
+		prevID = entry.Id
 	}
 }
 
@@ -209,17 +215,16 @@ func TestStore_GetAll_ViaGetSince(t *testing.T) {
 		t.Errorf("Expected 5 records, got %d", len(all))
 	}
 
-	// Verify all records have valid IDs and are in chronological order
-	var prevID int64
+	// Verify all records have valid Snowflake IDs and are in chronological order
+	var prevID int64 = 0
 	for i, entry := range all {
-		// IDs should start from 1
-		expectedID := int64(i + 1)
-		if entry.Id != expectedID {
-			t.Errorf("Expected ID %d at position %d, got %d", expectedID, i, entry.Id)
+		// IDs should be positive
+		if entry.Id <= 0 {
+			t.Errorf("Expected positive ID at position %d, got %d", i, entry.Id)
 		}
 		// IDs should be in ascending order
-		if i > 0 && entry.Id <= prevID {
-			t.Errorf("IDs not in chronological order at position %d", i)
+		if entry.Id <= prevID {
+			t.Errorf("IDs not in chronological order at position %d: prev=%d, current=%d", i, prevID, entry.Id)
 		}
 		prevID = entry.Id
 	}
