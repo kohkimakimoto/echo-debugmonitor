@@ -77,14 +77,14 @@ func renderMainView(ctx *debugmonitor.MonitorViewContext) error {
 }
 
 const mainView = `
-<div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
+<div class="overflow-x-auto w-full border-b border-gray-200 dark:border-gray-700">
   <table class="w-full">
     <thead>
-      <tr class="border-b dark:bg-gray-700 bg-gray-50 dark:border-b-gray-700 border-b-gray-200">
+      <tr class="border-b bg-gray-50 dark:bg-gray-900 dark:border-b-gray-700 border-b-gray-200">
         <th class="py-2 px-4 text-xs text-left">Output</th>
       </tr>
     </thead>
-    <tbody class="bg-white dark:bg-gray-800">
+    <tbody class="bg-white dark:bg-gray-950">
       {% for record in records %}
         <tr class="border-b dark:border-b-gray-700 border-b-gray-200 last:border-0">
           <td class="py-2 px-4 font-mono text-xs text-left align-top whitespace-pre-wrap break-all">{{ record.data }}</td>

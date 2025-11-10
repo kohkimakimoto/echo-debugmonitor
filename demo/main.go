@@ -20,6 +20,11 @@ func main() {
 
 	m.AddMonitor(wMonitor)
 
+	m.AddMonitor(&debugmonitor.Monitor{
+		Name:        "dummy",
+		DisplayName: "Dummy Monitor",
+	})
+
 	e.Any("/monitor", m.Handler())
 
 	// Add a test endpoint that logs messages
