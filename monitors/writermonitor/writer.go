@@ -81,16 +81,14 @@ const mainView = `
 <div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
   <table class="w-full">
     <thead>
-      <tr class="border-b dark:bg-gray-700 bg-gray-50 dark:border-b-gray-700 border-b-gray-200 [&>th]:px-4 [&>th]:py-2 [&>th]:text-sm [&>th]:font-semibold [&>th]:table-cell">
-        <th class="text-left">Id</th>
-        <th class="text-left">Output</th>
+      <tr class="border-b dark:bg-gray-700 bg-gray-50 dark:border-b-gray-700 border-b-gray-200">
+        <th class="py-2 px-4 text-xs text-left">Output</th>
       </tr>
     </thead>
     <tbody class="bg-white dark:bg-gray-800">
       {% for record in records %}
-        <tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>td]:px-4 [&>td]:py-2 [&>td]:text-sm last:border-0">
-          <td class="font-mono text-xs text-left align-top">{{ record.id }}</td>
-          <td class="font-mono text-xs text-left align-top whitespace-pre-wrap break-all">{{ record.data }}</td>
+        <tr class="border-b dark:border-b-gray-700 border-b-gray-200 last:border-0">
+          <td class="py-2 px-4 font-mono text-xs text-left align-top whitespace-pre-wrap break-all">{{ record.data }}</td>
         </tr>
       {% empty %}
         <tr>
