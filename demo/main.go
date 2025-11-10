@@ -13,7 +13,11 @@ func main() {
 
 	// write monitor
 	wMonitor, out := writermonitor.New(e.Logger.Output())
+	wMonitor.Name = "logger_output"
+	wMonitor.DisplayName = "Logger Output"
+
 	e.Logger.SetOutput(out)
+
 	m.AddMonitor(wMonitor)
 
 	e.Any("/monitor", m.Handler())

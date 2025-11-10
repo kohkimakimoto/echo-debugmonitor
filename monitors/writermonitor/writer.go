@@ -57,7 +57,6 @@ func renderMainView(ctx *debugmonitor.MonitorViewContext) error {
 	// Get the latest records from the store
 	entries := ctx.Store().GetLatest(100)
 
-	// Prepare data for template
 	records := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
 		payload, ok := entry.Payload.(*Payload)
