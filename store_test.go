@@ -2,7 +2,6 @@ package debugmonitor
 
 import (
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -326,17 +325,12 @@ func TestStore_DefaultMaxRecords(t *testing.T) {
 	}
 }
 
-func TestStore_SubscribeAdd(t *testing.T) {
+func TestStore_NewAddEvent(t *testing.T) {
 	store := NewStore(10)
 
-	// Channel to receive notifications
-	notifications := make(chan *DataEntry, 10)
-
-	// Subscribe to add events
-	listener := func(entry *DataEntry) {
-		notifications <- entry
-	}
-	store.SubscribeAdd(listener)
+	// Create an Add event subscription
+	event := store.NewAddEvent()
+	defer event.Close()
 
 	// Add a record
 	testPayload := map[string]any{"message": "test notification"}
@@ -344,7 +338,7 @@ func TestStore_SubscribeAdd(t *testing.T) {
 
 	// Wait for notification
 	select {
-	case entry := <-notifications:
+	case entry := <-event.C:
 		if entry.Payload.(map[string]any)["message"] != "test notification" {
 			t.Errorf("Expected notification with 'test notification', got %v", entry.Payload)
 		}
@@ -359,17 +353,13 @@ func TestStore_SubscribeAdd(t *testing.T) {
 func TestStore_MultipleAddSubscribers(t *testing.T) {
 	store := NewStore(10)
 
-	// Create multiple channels for different subscribers
+	// Create multiple event subscriptions
 	const numSubscribers = 3
-	channels := make([]chan *DataEntry, numSubscribers)
+	events := make([]*AddEvent, numSubscribers)
 
 	for i := 0; i < numSubscribers; i++ {
-		channels[i] = make(chan *DataEntry, 10)
-		idx := i // Capture for closure
-		listener := func(entry *DataEntry) {
-			channels[idx] <- entry
-		}
-		store.SubscribeAdd(listener)
+		events[i] = store.NewAddEvent()
+		defer events[i].Close()
 	}
 
 	// Add a record
@@ -379,7 +369,7 @@ func TestStore_MultipleAddSubscribers(t *testing.T) {
 	// All subscribers should receive the notification
 	for i := 0; i < numSubscribers; i++ {
 		select {
-		case entry := <-channels[i]:
+		case entry := <-events[i].C:
 			if entry.Payload.(map[string]any)["index"] != 1 {
 				t.Errorf("Subscriber %d: Expected index 1, got %v", i, entry.Payload)
 			}
@@ -389,31 +379,22 @@ func TestStore_MultipleAddSubscribers(t *testing.T) {
 	}
 }
 
-func TestStore_SubscribeClear(t *testing.T) {
+func TestStore_NewClearEvent(t *testing.T) {
 	store := NewStore(10)
 
-	// Channels to receive events
-	addNotifications := make(chan *DataEntry, 10)
-	clearNotifications := make(chan bool, 10)
+	// Create event subscriptions
+	addEvent := store.NewAddEvent()
+	defer addEvent.Close()
 
-	// Subscribe to add events
-	addListener := func(entry *DataEntry) {
-		addNotifications <- entry
-	}
-	store.SubscribeAdd(addListener)
-
-	// Subscribe to clear events
-	clearListener := func() {
-		clearNotifications <- true
-	}
-	store.SubscribeClear(clearListener)
+	clearEvent := store.NewClearEvent()
+	defer clearEvent.Close()
 
 	// Add a record first
 	store.Add(map[string]any{"message": "test"})
 
 	// Wait for Add event
 	select {
-	case entry := <-addNotifications:
+	case entry := <-addEvent.C:
 		if entry.Payload.(map[string]any)["message"] != "test" {
 			t.Errorf("Expected 'test', got %v", entry.Payload)
 		}
@@ -426,7 +407,7 @@ func TestStore_SubscribeClear(t *testing.T) {
 
 	// Wait for Clear event
 	select {
-	case <-clearNotifications:
+	case <-clearEvent.C:
 		// Expected - clear event received
 	case <-time.After(1 * time.Second):
 		t.Error("Timeout waiting for Clear event")
@@ -445,41 +426,73 @@ func TestStore_ConcurrentSubscriptions(t *testing.T) {
 	const numRecords = 20
 
 	var wg sync.WaitGroup
-	counters := make([]int32, numSubscribers)
 
-	// Create multiple concurrent add subscribers
+	// Create multiple concurrent add event subscriptions
+	events := make([]*AddEvent, numSubscribers)
+	allReceived := make([]chan bool, numSubscribers)
+
 	for i := 0; i < numSubscribers; i++ {
+		events[i] = store.NewAddEvent()
+		defer events[i].Close()
+
+		allReceived[i] = make(chan bool, 1)
 		wg.Add(1)
 		idx := i
-		listener := func(entry *DataEntry) {
-			atomic.AddInt32(&counters[idx], 1)
-		}
-		store.SubscribeAdd(listener)
-		go func() {
+		go func(event *AddEvent, done chan bool) {
 			defer wg.Done()
-			// Just wait for notifications
-		}()
+			count := 0
+			for range event.C {
+				count++
+				if count == numRecords {
+					done <- true
+				}
+			}
+		}(events[idx], allReceived[idx])
 	}
 
-	// Add records concurrently
+	// Add records
 	for i := 0; i < numRecords; i++ {
-		wg.Add(1)
-		go func(index int) {
-			defer wg.Done()
-			store.Add(map[string]any{"index": index})
-		}(i)
+		store.Add(map[string]any{"index": i})
+	}
+
+	// Wait for all subscribers to receive all notifications
+	for i := 0; i < numSubscribers; i++ {
+		select {
+		case <-allReceived[i]:
+			// Subscriber received all notifications
+		case <-time.After(2 * time.Second):
+			t.Errorf("Subscriber %d did not receive all notifications in time", i)
+		}
+	}
+
+	// Close all events to stop goroutines
+	for _, event := range events {
+		event.Close()
 	}
 
 	wg.Wait()
+}
 
-	// Give some time for async notifications to complete
-	time.Sleep(100 * time.Millisecond)
+func TestStore_EventClose(t *testing.T) {
+	store := NewStore(10)
 
-	// Verify all subscribers received all notifications
-	for i := 0; i < numSubscribers; i++ {
-		count := atomic.LoadInt32(&counters[i])
-		if count != numRecords {
-			t.Errorf("Subscriber %d: Expected %d notifications, got %d", i, numRecords, count)
+	// Create an event and close it
+	event := store.NewAddEvent()
+	event.Close()
+
+	// Add a record - closed event should not receive it
+	store.Add(map[string]any{"message": "test"})
+
+	// Channel should be closed
+	select {
+	case _, ok := <-event.C:
+		if ok {
+			t.Error("Expected channel to be closed")
 		}
+	case <-time.After(100 * time.Millisecond):
+		t.Error("Expected channel to be closed immediately")
 	}
+
+	// Calling Close again should be safe
+	event.Close()
 }

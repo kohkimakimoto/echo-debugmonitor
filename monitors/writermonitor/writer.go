@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
+	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
 )
 
@@ -43,7 +44,7 @@ func New(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 		ViewHandler: func(ctx *debugmonitor.MonitorViewContext) error {
 			switch ctx.EchoContext().QueryParam("action") {
 			case "renderMainView":
-				return ctx.Render(http.StatusOK, mainView, nil)
+				return renderMainView(ctx)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -52,16 +53,52 @@ func New(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 	return m, &TeeWriter{original: w, monitor: m}
 }
 
+func renderMainView(ctx *debugmonitor.MonitorViewContext) error {
+	// Get the latest records from the store
+	entries := ctx.Store().GetLatest(100)
+
+	// Prepare data for template
+	records := make([]map[string]any, 0, len(entries))
+	for _, entry := range entries {
+		payload, ok := entry.Payload.(*Payload)
+		if !ok {
+			continue
+		}
+		records = append(records, map[string]any{
+			"id":   entry.Id,
+			"data": payload.Data,
+		})
+	}
+
+	data := pongo2.Context{
+		"records": records,
+	}
+
+	return ctx.Render(http.StatusOK, mainView, data)
+}
+
 const mainView = `
 <div class="overflow-x-auto w-full rounded border dark:border-gray-700 border-gray-200">
   <table class="w-full">
     <thead>
       <tr class="border-b dark:bg-gray-700 bg-gray-50 dark:border-b-gray-700 border-b-gray-200 [&>th]:px-4 [&>th]:py-2 [&>th]:text-sm [&>th]:font-semibold [&>th]:table-cell">
-        <th>Id</th>
-        <th>Time</th>
+        <th class="text-left">Id</th>
+        <th class="text-left">Output</th>
       </tr>
     </thead>
-    <tbody>
+    <tbody class="bg-white dark:bg-gray-800">
+      {% for record in records %}
+        <tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>td]:px-4 [&>td]:py-2 [&>td]:text-sm last:border-0">
+          <td class="font-mono text-xs">{{ record.id }}</td>
+          <td class="font-mono text-xs whitespace-pre-wrap break-all">{{ record.data }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="2" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+            No data written yet
+          </td>
+        </tr>
+      {% endfor %}
     </tbody>
   </table>
 </div>

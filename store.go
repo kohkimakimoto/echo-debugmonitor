@@ -11,28 +11,73 @@ type DataEntry struct {
 	Payload any
 }
 
-// AddListener is a function that is called when new data is added to the Store.
-// It receives the newly added DataEntry.
-type AddListener func(*DataEntry)
+// AddEvent represents a subscription to Add events.
+// Use the C channel to receive notifications when new data is added.
+// Call Close() when done to clean up resources.
+type AddEvent struct {
+	C      <-chan *DataEntry // Channel to receive Add events
+	store  *Store
+	ch     chan *DataEntry
+	closed bool
+	mu     sync.Mutex
+}
 
-// ClearListener is a function that is called when the Store is cleared.
-type ClearListener func()
+// Close unsubscribes from the Store and closes the event channel.
+// After calling Close, the C channel will be closed and no more events will be received.
+func (e *AddEvent) Close() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if e.closed {
+		return
+	}
+	e.closed = true
+
+	e.store.unsubscribeAdd(e)
+	close(e.ch)
+}
+
+// ClearEvent represents a subscription to Clear events.
+// Use the C channel to receive notifications when the store is cleared.
+// Call Close() when done to clean up resources.
+type ClearEvent struct {
+	C      <-chan struct{} // Channel to receive Clear events
+	store  *Store
+	ch     chan struct{}
+	closed bool
+	mu     sync.Mutex
+}
+
+// Close unsubscribes from the Store and closes the event channel.
+// After calling Close, the C channel will be closed and no more events will be received.
+func (e *ClearEvent) Close() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	if e.closed {
+		return
+	}
+	e.closed = true
+
+	e.store.unsubscribeClear(e)
+	close(e.ch)
+}
 
 // Store is an in-memory data store that provides O(1) access by ID
 // while maintaining insertion order like a linked hash map.
 // It automatically removes old records when the maximum capacity is reached.
 // It uses Snowflake-style int64 IDs to guarantee uniqueness and ordering.
-// Store supports separate listeners for Add and Clear events.
+// Store supports channel-based event subscriptions for Add and Clear events.
 type Store struct {
-	mu             sync.RWMutex
-	maxRecords     int
-	idGen          *IDGenerator            // Snowflake-style ID generator
-	entries        map[int64]*list.Element // map for O(1) access by ID
-	order          *list.List              // doubly linked list to maintain insertion order
-	addListenersMu sync.RWMutex            // protects addListeners slice
-	addListeners   []AddListener           // listeners for Add events
-	clearListenersMu sync.RWMutex          // protects clearListeners slice
-	clearListeners []ClearListener         // listeners for Clear events
+	mu               sync.RWMutex
+	maxRecords       int
+	idGen            *IDGenerator            // Snowflake-style ID generator
+	entries          map[int64]*list.Element // map for O(1) access by ID
+	order            *list.List              // doubly linked list to maintain insertion order
+	addEventsMu      sync.RWMutex            // protects addEvents slice
+	addEvents        []*AddEvent             // active Add event subscriptions
+	clearEventsMu    sync.RWMutex            // protects clearEvents slice
+	clearEvents      []*ClearEvent           // active Clear event subscriptions
 }
 
 // NewStore creates a new Store with the specified maximum number of records.
@@ -42,12 +87,12 @@ func NewStore(maxRecords int) *Store {
 		maxRecords = 1000 // Default maximum
 	}
 	return &Store{
-		maxRecords:     maxRecords,
-		idGen:          NewIDGenerator(),
-		entries:        make(map[int64]*list.Element),
-		order:          list.New(),
-		addListeners:   make([]AddListener, 0),
-		clearListeners: make([]ClearListener, 0),
+		maxRecords:  maxRecords,
+		idGen:       NewIDGenerator(),
+		entries:     make(map[int64]*list.Element),
+		order:       list.New(),
+		addEvents:   make([]*AddEvent, 0),
+		clearEvents: make([]*ClearEvent, 0),
 	}
 }
 
@@ -83,8 +128,8 @@ func (s *Store) Add(payload any) {
 
 	s.mu.Unlock()
 
-	// Notify add listeners outside the lock to prevent deadlocks
-	s.notifyAddListeners(entry)
+	// Notify add event subscribers outside the lock to prevent deadlocks
+	s.notifyAddEvents(entry)
 }
 
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
@@ -184,51 +229,100 @@ func (s *Store) Clear() {
 
 	s.mu.Unlock()
 
-	// Notify clear listeners outside the lock to prevent deadlocks
-	s.notifyClearListeners()
+	// Notify clear event subscribers outside the lock to prevent deadlocks
+	s.notifyClearEvents()
 }
 
-// SubscribeAdd registers a listener function that will be called whenever new data is added.
-// The listener receives the newly added DataEntry.
-// The listener function is called asynchronously in a separate goroutine, so it should
-// not block for long periods.
-func (s *Store) SubscribeAdd(listener AddListener) {
-	s.addListenersMu.Lock()
-	defer s.addListenersMu.Unlock()
+// NewAddEvent creates a new subscription to Add events.
+// The returned AddEvent provides a channel that will receive notifications
+// when new data is added to the Store.
+// Call Close() on the returned AddEvent when done to clean up resources.
+func (s *Store) NewAddEvent() *AddEvent {
+	ch := make(chan *DataEntry, 10) // Buffered to prevent blocking
+	event := &AddEvent{
+		C:     ch,
+		store: s,
+		ch:    ch,
+	}
 
-	s.addListeners = append(s.addListeners, listener)
+	s.addEventsMu.Lock()
+	s.addEvents = append(s.addEvents, event)
+	s.addEventsMu.Unlock()
+
+	return event
 }
 
-// SubscribeClear registers a listener function that will be called whenever the store is cleared.
-// The listener function is called asynchronously in a separate goroutine, so it should
-// not block for long periods.
-func (s *Store) SubscribeClear(listener ClearListener) {
-	s.clearListenersMu.Lock()
-	defer s.clearListenersMu.Unlock()
+// NewClearEvent creates a new subscription to Clear events.
+// The returned ClearEvent provides a channel that will receive notifications
+// when the Store is cleared.
+// Call Close() on the returned ClearEvent when done to clean up resources.
+func (s *Store) NewClearEvent() *ClearEvent {
+	ch := make(chan struct{}, 1) // Buffered to prevent blocking
+	event := &ClearEvent{
+		C:     ch,
+		store: s,
+		ch:    ch,
+	}
 
-	s.clearListeners = append(s.clearListeners, listener)
+	s.clearEventsMu.Lock()
+	s.clearEvents = append(s.clearEvents, event)
+	s.clearEventsMu.Unlock()
+
+	return event
 }
 
-// notifyAddListeners calls all registered add listeners with the new data entry.
-// Each listener is called in a separate goroutine to prevent blocking.
-func (s *Store) notifyAddListeners(entry *DataEntry) {
-	s.addListenersMu.RLock()
-	defer s.addListenersMu.RUnlock()
+// unsubscribeAdd removes an AddEvent from the active subscriptions.
+func (s *Store) unsubscribeAdd(event *AddEvent) {
+	s.addEventsMu.Lock()
+	defer s.addEventsMu.Unlock()
 
-	for _, listener := range s.addListeners {
-		// Call each listener in a goroutine to prevent blocking
-		go listener(entry)
+	for i, e := range s.addEvents {
+		if e == event {
+			s.addEvents = append(s.addEvents[:i], s.addEvents[i+1:]...)
+			break
+		}
 	}
 }
 
-// notifyClearListeners calls all registered clear listeners.
-// Each listener is called in a separate goroutine to prevent blocking.
-func (s *Store) notifyClearListeners() {
-	s.clearListenersMu.RLock()
-	defer s.clearListenersMu.RUnlock()
+// unsubscribeClear removes a ClearEvent from the active subscriptions.
+func (s *Store) unsubscribeClear(event *ClearEvent) {
+	s.clearEventsMu.Lock()
+	defer s.clearEventsMu.Unlock()
 
-	for _, listener := range s.clearListeners {
-		// Call each listener in a goroutine to prevent blocking
-		go listener()
+	for i, e := range s.clearEvents {
+		if e == event {
+			s.clearEvents = append(s.clearEvents[:i], s.clearEvents[i+1:]...)
+			break
+		}
+	}
+}
+
+// notifyAddEvents sends notifications to all active Add event subscribers.
+// Non-blocking sends are used to prevent slow consumers from blocking the Store.
+func (s *Store) notifyAddEvents(entry *DataEntry) {
+	s.addEventsMu.RLock()
+	defer s.addEventsMu.RUnlock()
+
+	for _, event := range s.addEvents {
+		select {
+		case event.ch <- entry:
+		default:
+			// Channel is full, skip this subscriber to avoid blocking
+		}
+	}
+}
+
+// notifyClearEvents sends notifications to all active Clear event subscribers.
+// Non-blocking sends are used to prevent slow consumers from blocking the Store.
+func (s *Store) notifyClearEvents() {
+	s.clearEventsMu.RLock()
+	defer s.clearEventsMu.RUnlock()
+
+	for _, event := range s.clearEvents {
+		select {
+		case event.ch <- struct{}{}:
+		default:
+			// Channel is full, skip this subscriber to avoid blocking
+		}
 	}
 }
