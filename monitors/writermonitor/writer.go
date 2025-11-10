@@ -89,8 +89,8 @@ const mainView = `
     <tbody class="bg-white dark:bg-gray-800">
       {% for record in records %}
         <tr class="border-b dark:border-b-gray-700 border-b-gray-200 [&>td]:px-4 [&>td]:py-2 [&>td]:text-sm last:border-0">
-          <td class="font-mono text-xs">{{ record.id }}</td>
-          <td class="font-mono text-xs whitespace-pre-wrap break-all">{{ record.data }}</td>
+          <td class="font-mono text-xs text-left align-top">{{ record.id }}</td>
+          <td class="font-mono text-xs text-left align-top whitespace-pre-wrap break-all">{{ record.data }}</td>
         </tr>
       {% empty %}
         <tr>
