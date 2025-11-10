@@ -11,16 +11,28 @@ type DataEntry struct {
 	Payload any
 }
 
+// AddListener is a function that is called when new data is added to the Store.
+// It receives the newly added DataEntry.
+type AddListener func(*DataEntry)
+
+// ClearListener is a function that is called when the Store is cleared.
+type ClearListener func()
+
 // Store is an in-memory data store that provides O(1) access by ID
 // while maintaining insertion order like a linked hash map.
 // It automatically removes old records when the maximum capacity is reached.
 // It uses Snowflake-style int64 IDs to guarantee uniqueness and ordering.
+// Store supports separate listeners for Add and Clear events.
 type Store struct {
-	mu         sync.RWMutex
-	maxRecords int
-	idGen      *IDGenerator            // Snowflake-style ID generator
-	entries    map[int64]*list.Element // map for O(1) access by ID
-	order      *list.List              // doubly linked list to maintain insertion order
+	mu             sync.RWMutex
+	maxRecords     int
+	idGen          *IDGenerator            // Snowflake-style ID generator
+	entries        map[int64]*list.Element // map for O(1) access by ID
+	order          *list.List              // doubly linked list to maintain insertion order
+	addListenersMu sync.RWMutex            // protects addListeners slice
+	addListeners   []AddListener           // listeners for Add events
+	clearListenersMu sync.RWMutex          // protects clearListeners slice
+	clearListeners []ClearListener         // listeners for Clear events
 }
 
 // NewStore creates a new Store with the specified maximum number of records.
@@ -30,19 +42,21 @@ func NewStore(maxRecords int) *Store {
 		maxRecords = 1000 // Default maximum
 	}
 	return &Store{
-		maxRecords: maxRecords,
-		idGen:      NewIDGenerator(),
-		entries:    make(map[int64]*list.Element),
-		order:      list.New(),
+		maxRecords:     maxRecords,
+		idGen:          NewIDGenerator(),
+		entries:        make(map[int64]*list.Element),
+		order:          list.New(),
+		addListeners:   make([]AddListener, 0),
+		clearListeners: make([]ClearListener, 0),
 	}
 }
 
 // Add adds a new record to the store with a Snowflake-style int64 ID.
 // The ID is generated using a time-based algorithm for uniqueness and ordering.
 // If the store is at capacity, the oldest record is removed.
+// After adding, all registered listeners are notified with the new entry.
 func (s *Store) Add(payload any) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	// Generate Snowflake-style ID
 	id := s.idGen.Generate()
@@ -66,6 +80,11 @@ func (s *Store) Add(payload any) {
 			s.order.Remove(oldest)
 		}
 	}
+
+	s.mu.Unlock()
+
+	// Notify add listeners outside the lock to prevent deadlocks
+	s.notifyAddListeners(entry)
 }
 
 // GetLatest returns the N most recent data entries in reverse chronological order (newest first).
@@ -155,11 +174,61 @@ func (s *Store) Len() int {
 }
 
 // Clear removes all records from the store.
+// After clearing, all registered clear listeners are notified.
 func (s *Store) Clear() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	s.idGen = NewIDGenerator()
 	s.entries = make(map[int64]*list.Element)
 	s.order.Init()
+
+	s.mu.Unlock()
+
+	// Notify clear listeners outside the lock to prevent deadlocks
+	s.notifyClearListeners()
+}
+
+// SubscribeAdd registers a listener function that will be called whenever new data is added.
+// The listener receives the newly added DataEntry.
+// The listener function is called asynchronously in a separate goroutine, so it should
+// not block for long periods.
+func (s *Store) SubscribeAdd(listener AddListener) {
+	s.addListenersMu.Lock()
+	defer s.addListenersMu.Unlock()
+
+	s.addListeners = append(s.addListeners, listener)
+}
+
+// SubscribeClear registers a listener function that will be called whenever the store is cleared.
+// The listener function is called asynchronously in a separate goroutine, so it should
+// not block for long periods.
+func (s *Store) SubscribeClear(listener ClearListener) {
+	s.clearListenersMu.Lock()
+	defer s.clearListenersMu.Unlock()
+
+	s.clearListeners = append(s.clearListeners, listener)
+}
+
+// notifyAddListeners calls all registered add listeners with the new data entry.
+// Each listener is called in a separate goroutine to prevent blocking.
+func (s *Store) notifyAddListeners(entry *DataEntry) {
+	s.addListenersMu.RLock()
+	defer s.addListenersMu.RUnlock()
+
+	for _, listener := range s.addListeners {
+		// Call each listener in a goroutine to prevent blocking
+		go listener(entry)
+	}
+}
+
+// notifyClearListeners calls all registered clear listeners.
+// Each listener is called in a separate goroutine to prevent blocking.
+func (s *Store) notifyClearListeners() {
+	s.clearListenersMu.RLock()
+	defer s.clearListenersMu.RUnlock()
+
+	for _, listener := range s.clearListeners {
+		// Call each listener in a goroutine to prevent blocking
+		go listener()
+	}
 }

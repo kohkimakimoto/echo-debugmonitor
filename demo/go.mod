@@ -4,10 +4,14 @@ go 1.23.0
 
 toolchain go1.24.5
 
-replace github.com/kohkimakimoto/echo-debugmonitor => ..
+replace (
+	github.com/kohkimakimoto/echo-debugmonitor => ..
+	github.com/kohkimakimoto/echo-debugmonitor/monitors/writermonitor => ../monitors/writermonitor
+)
 
 require (
 	github.com/kohkimakimoto/echo-debugmonitor v0.0.0-00010101000000-000000000000
+	github.com/kohkimakimoto/echo-debugmonitor/monitors/writermonitor v0.0.0-00010101000000-000000000000
 	github.com/labstack/echo/v4 v4.13.4
 )
 

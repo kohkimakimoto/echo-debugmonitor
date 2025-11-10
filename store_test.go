@@ -2,7 +2,9 @@ package debugmonitor
 
 import (
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestStore_Add(t *testing.T) {
@@ -321,5 +323,163 @@ func TestStore_DefaultMaxRecords(t *testing.T) {
 	// Should have default max (1000) records
 	if store.Len() != 1000 {
 		t.Errorf("Expected default 1000 records, got %d", store.Len())
+	}
+}
+
+func TestStore_SubscribeAdd(t *testing.T) {
+	store := NewStore(10)
+
+	// Channel to receive notifications
+	notifications := make(chan *DataEntry, 10)
+
+	// Subscribe to add events
+	listener := func(entry *DataEntry) {
+		notifications <- entry
+	}
+	store.SubscribeAdd(listener)
+
+	// Add a record
+	testPayload := map[string]any{"message": "test notification"}
+	store.Add(testPayload)
+
+	// Wait for notification
+	select {
+	case entry := <-notifications:
+		if entry.Payload.(map[string]any)["message"] != "test notification" {
+			t.Errorf("Expected notification with 'test notification', got %v", entry.Payload)
+		}
+		if entry.Id <= 0 {
+			t.Errorf("Expected positive ID in notification, got %d", entry.Id)
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timeout waiting for notification")
+	}
+}
+
+func TestStore_MultipleAddSubscribers(t *testing.T) {
+	store := NewStore(10)
+
+	// Create multiple channels for different subscribers
+	const numSubscribers = 3
+	channels := make([]chan *DataEntry, numSubscribers)
+
+	for i := 0; i < numSubscribers; i++ {
+		channels[i] = make(chan *DataEntry, 10)
+		idx := i // Capture for closure
+		listener := func(entry *DataEntry) {
+			channels[idx] <- entry
+		}
+		store.SubscribeAdd(listener)
+	}
+
+	// Add a record
+	testPayload := map[string]any{"index": 1}
+	store.Add(testPayload)
+
+	// All subscribers should receive the notification
+	for i := 0; i < numSubscribers; i++ {
+		select {
+		case entry := <-channels[i]:
+			if entry.Payload.(map[string]any)["index"] != 1 {
+				t.Errorf("Subscriber %d: Expected index 1, got %v", i, entry.Payload)
+			}
+		case <-time.After(1 * time.Second):
+			t.Errorf("Subscriber %d did not receive notification", i)
+		}
+	}
+}
+
+func TestStore_SubscribeClear(t *testing.T) {
+	store := NewStore(10)
+
+	// Channels to receive events
+	addNotifications := make(chan *DataEntry, 10)
+	clearNotifications := make(chan bool, 10)
+
+	// Subscribe to add events
+	addListener := func(entry *DataEntry) {
+		addNotifications <- entry
+	}
+	store.SubscribeAdd(addListener)
+
+	// Subscribe to clear events
+	clearListener := func() {
+		clearNotifications <- true
+	}
+	store.SubscribeClear(clearListener)
+
+	// Add a record first
+	store.Add(map[string]any{"message": "test"})
+
+	// Wait for Add event
+	select {
+	case entry := <-addNotifications:
+		if entry.Payload.(map[string]any)["message"] != "test" {
+			t.Errorf("Expected 'test', got %v", entry.Payload)
+		}
+	case <-time.After(1 * time.Second):
+		t.Error("Timeout waiting for Add event")
+	}
+
+	// Clear the store
+	store.Clear()
+
+	// Wait for Clear event
+	select {
+	case <-clearNotifications:
+		// Expected - clear event received
+	case <-time.After(1 * time.Second):
+		t.Error("Timeout waiting for Clear event")
+	}
+
+	// Verify store is actually cleared
+	if store.Len() != 0 {
+		t.Errorf("Expected store length 0 after clear, got %d", store.Len())
+	}
+}
+
+func TestStore_ConcurrentSubscriptions(t *testing.T) {
+	store := NewStore(100)
+
+	const numSubscribers = 10
+	const numRecords = 20
+
+	var wg sync.WaitGroup
+	counters := make([]int32, numSubscribers)
+
+	// Create multiple concurrent add subscribers
+	for i := 0; i < numSubscribers; i++ {
+		wg.Add(1)
+		idx := i
+		listener := func(entry *DataEntry) {
+			atomic.AddInt32(&counters[idx], 1)
+		}
+		store.SubscribeAdd(listener)
+		go func() {
+			defer wg.Done()
+			// Just wait for notifications
+		}()
+	}
+
+	// Add records concurrently
+	for i := 0; i < numRecords; i++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			store.Add(map[string]any{"index": index})
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Give some time for async notifications to complete
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify all subscribers received all notifications
+	for i := 0; i < numSubscribers; i++ {
+		count := atomic.LoadInt32(&counters[i])
+		if count != numRecords {
+			t.Errorf("Subscriber %d: Expected %d notifications, got %d", i, numRecords, count)
+		}
 	}
 }
