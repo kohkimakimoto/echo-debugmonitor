@@ -67,8 +67,6 @@ type Monitor struct {
 
 	// store is the in-memory data store for records.
 	store *Store
-	// manager
-	manager *Manager
 }
 
 func (m *Monitor) Write(payload any) {
