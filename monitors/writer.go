@@ -32,6 +32,15 @@ func (t *TeeWriter) Write(p []byte) (n int, err error) {
 	return n, nil
 }
 
+func NewLoggerWriterMonitor(logger echo.Logger) *debugmonitor.Monitor {
+	o := logger.Output()
+	m, w := NewWriterMonitor(o)
+	m.Name = "logger_writer"
+	m.DisplayName = "Logger Writer"
+	logger.SetOutput(w)
+	return m
+}
+
 func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 	m := &debugmonitor.Monitor{
 		Name:        "writer",
@@ -41,7 +50,7 @@ func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 		ActionHandler: func(c echo.Context, monitor *debugmonitor.Monitor, action string) error {
 			switch action {
 			case "renderMainView":
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return c.HTML(http.StatusOK, writerMonitorMainView)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -51,11 +60,7 @@ func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 	return m, &TeeWriter{original: w, monitor: m}
 }
 
-func NewLoggerWriterMonitor(logger echo.Logger) *debugmonitor.Monitor {
-	o := logger.Output()
-	m, w := NewWriterMonitor(o)
-	m.Name = "logger_writer"
-	m.DisplayName = "Logger Writer"
-	logger.SetOutput(w)
-	return m
-}
+const writerMonitorMainView = `
+<div>
+</div>
+`
