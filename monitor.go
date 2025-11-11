@@ -49,7 +49,7 @@ func (c *MonitorViewContext) renderTemplateString(body string, data pongo2.Conte
 	return string(b), nil
 }
 
-type MonitorViewHandlerFunc func(ctx *MonitorViewContext) error
+type MonitorActionHandler func(c echo.Context, monitor *Monitor, action string) error
 
 type Monitor struct {
 	// Name is the name of this monitor.
@@ -62,8 +62,8 @@ type Monitor struct {
 	// Icon is an HTML element string representing the icon for this monitor.
 	// Typically, it is an SVG string.
 	Icon string
-	// ViewHandler is the function to render the monitor view.
-	ViewHandler MonitorViewHandlerFunc
+	//
+	ActionHandler MonitorActionHandler
 
 	// store is the in-memory data store for records.
 	store *Store

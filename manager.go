@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/kohkimakimoto/echo-debugmonitor/internal/htmx"
 	viewkit "github.com/kohkimakimoto/echo-viewkit"
 	"github.com/kohkimakimoto/echo-viewkit/pongo2"
 	"github.com/labstack/echo/v4"
@@ -90,19 +89,15 @@ func (m *Manager) Handler() echo.HandlerFunc {
 				return c.Redirect(http.StatusFound, c.Path())
 			}
 
-			if htmx.IsHxRequest(c) && !htmx.IsHxBoosted(c) {
-				if monitor.ViewHandler == nil {
+			action := c.QueryParam("action")
+			if action != "" {
+				if monitor.ActionHandler == nil {
 					return c.JSON(http.StatusInternalServerError, map[string]any{
-						"error": "Monitor " + monitor.Name + " does not have a ViewHandler defined.",
+						"error": "Monitor " + monitor.Name + " does not have a ActionHandler implementation.",
 					})
 				}
-
-				// sub request for monitor content
-				return monitor.ViewHandler(&MonitorViewContext{
-					ctx:      c,
-					monitor:  monitor,
-					renderer: r,
-				})
+				// handle monitor action
+				return monitor.ActionHandler(c, monitor, action)
 			}
 
 			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{

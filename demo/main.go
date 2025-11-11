@@ -2,7 +2,7 @@ package main
 
 import (
 	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
-	writermonitor "github.com/kohkimakimoto/echo-debugmonitor/monitors/writermonitor"
+	"github.com/kohkimakimoto/echo-debugmonitor/monitors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -11,19 +11,8 @@ func main() {
 
 	m := debugmonitor.New()
 
-	// write monitor
-	wMonitor, out := writermonitor.New(e.Logger.Output())
-	wMonitor.Name = "logger_output"
-	wMonitor.DisplayName = "Logger Output"
-
-	e.Logger.SetOutput(out)
-
-	m.AddMonitor(wMonitor)
-
-	m.AddMonitor(&debugmonitor.Monitor{
-		Name:        "dummy",
-		DisplayName: "Dummy Monitor",
-	})
+	// logger writer monitor
+	m.AddMonitor(monitors.NewLoggerWriterMonitor(e.Logger))
 
 	e.Any("/monitor", m.Handler())
 
