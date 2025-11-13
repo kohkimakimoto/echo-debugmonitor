@@ -18,14 +18,14 @@ type TeeWriter struct {
 }
 
 func (t *TeeWriter) Write(p []byte) (n int, err error) {
-	// Write to the original writer
+	// Add to the original writer
 	n, err = t.original.Write(p)
 	if err != nil {
 		return n, err
 	}
 
 	// Also send the payload to the monitor
-	t.monitor.Write(&WriterPayload{
+	t.monitor.Add(&WriterPayload{
 		Data: string(p),
 	})
 
@@ -47,7 +47,7 @@ func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 		DisplayName: "Writer",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconCircleStack,
-		ActionHandler: func(c echo.Context, monitor *debugmonitor.Monitor, action string) error {
+		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "renderMainView":
 				return c.HTML(http.StatusOK, writerMonitorMainView)

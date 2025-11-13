@@ -16,9 +16,9 @@ func TestMonitor_WriteWithStoreIntegration(t *testing.T) {
 
 	mgr.AddMonitor(mon)
 
-	// Write some data
+	// Add some data
 	for i := 1; i <= 5; i++ {
-		mon.Write(map[string]any{
+		mon.Add(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
@@ -84,9 +84,9 @@ func TestMonitor_MaxRecordsLimit(t *testing.T) {
 
 	mgr.AddMonitor(mon)
 
-	// Write 5 records (exceeds limit of 3)
+	// Add 5 records (exceeds limit of 3)
 	for i := 1; i <= 5; i++ {
-		mon.Write(map[string]any{
+		mon.Add(map[string]any{
 			"message": "test message",
 			"index":   i,
 		})
@@ -119,7 +119,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 
 	mgr.AddMonitor(mon)
 
-	// Write records concurrently from multiple goroutines
+	// Add records concurrently from multiple goroutines
 	const numGoroutines = 10
 	const writesPerGoroutine = 10
 
@@ -127,7 +127,7 @@ func TestMonitor_ConcurrentWrites(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(goroutineID int) {
 			for j := 0; j < writesPerGoroutine; j++ {
-				mon.Write(map[string]any{
+				mon.Add(map[string]any{
 					"goroutine": goroutineID,
 					"index":     j,
 				})

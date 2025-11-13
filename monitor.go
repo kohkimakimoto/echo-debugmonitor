@@ -49,7 +49,7 @@ func (c *MonitorViewContext) renderTemplateString(body string, data pongo2.Conte
 	return string(b), nil
 }
 
-type MonitorActionHandler func(c echo.Context, monitor *Monitor, action string) error
+type MonitorActionHandler func(c echo.Context, store *Store, action string) error
 
 type Monitor struct {
 	// Name is the name of this monitor.
@@ -69,7 +69,7 @@ type Monitor struct {
 	store *Store
 }
 
-func (m *Monitor) Write(payload any) {
+func (m *Monitor) Add(payload any) {
 	if m.store == nil {
 		// noop if the store is not initialized
 		// It means the monitor is not connected to a Manager
@@ -77,4 +77,8 @@ func (m *Monitor) Write(payload any) {
 	}
 
 	m.store.Add(payload)
+}
+
+func (m *Monitor) Store() *Store {
+	return m.store
 }
