@@ -61,6 +61,6 @@ func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
 }
 
 const writerMonitorMainView = `
-<div>
+<div hx-get="{{ url_path_query("monitor") }}" hx-trigger="load" hx-swap="innerHTML">
 </div>
 `

@@ -11,7 +11,7 @@
   <script src="?file=app.js" defer></script>
   <x-style></x-style>
 </head>
-<body class="antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100" hx-boost="true" hx-history="false" hx-target="#app" hx-select="#app"  hx-swap="outerHTML">
+<body class="antialiased bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100" hx-history="false" hx-target="#app" hx-select="#app" hx-swap="outerHTML">
   <div id="app">
     <div class="flex flex-col md:flex-row h-screen overflow-hidden">
       {# sidebar #}
@@ -26,6 +26,7 @@
                 <a
                   href="{{ url_path }}?monitor={{ m.Name }}"
                   class="w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors {% if monitor.Name == m.Name %}bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-300{% else %}text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50{% endif %}"
+                  hx-boost="true"
                 >
                   <div class="flex items-center space-x-2">
                     <span class="w-4 h-4">{{ m.Icon|safe }}</span>
