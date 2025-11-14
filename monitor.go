@@ -78,7 +78,3 @@ func (m *Monitor) Add(payload any) {
 
 	m.store.Add(payload)
 }
-
-func (m *Monitor) Store() *Store {
-	return m.store
-}

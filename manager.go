@@ -97,7 +97,7 @@ func (m *Manager) Handler() echo.HandlerFunc {
 					})
 				}
 				// handle monitor action
-				return monitor.ActionHandler(c, monitor.Store(), action)
+				return monitor.ActionHandler(c, monitor.store, action)
 			}
 
 			return viewkit.Render(r, c, http.StatusOK, "monitor", map[string]any{
