@@ -4,9 +4,7 @@ go 1.23.0
 
 toolchain go1.24.5
 
-replace (
-	github.com/kohkimakimoto/echo-debugmonitor => ..
-)
+replace github.com/kohkimakimoto/echo-debugmonitor => ..
 
 require (
 	github.com/kohkimakimoto/echo-debugmonitor v0.0.0-00010101000000-000000000000
