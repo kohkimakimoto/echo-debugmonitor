@@ -1,0 +1,232 @@
+<div x-data="errorsMonitor()" class="h-full flex flex-col" x-clock>
+  <!-- Connection status indicator and controls -->
+  <div class="px-4 py-2 bg-white dark:bg-gray-950 border-b dark:border-gray-700 border-gray-200 sticky top-0 left-0">
+    <div class="space-y-2">
+      <div class="flex items-center justify-start space-x-4">
+        <!-- Search input -->
+        <div class="flex items-center space-x-2">
+          <input
+            type="text"
+            x-model="searchQuery"
+            @input="applyFilter()"
+            placeholder="Search..."
+            class="px-3 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          @click="toggleLiveUpdates()"
+          class="px-3 py-1 text-xs rounded transition-colors"
+          :class="liveUpdatesEnabled ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'"
+        >
+          <span x-text="liveUpdatesEnabled ? 'Live Updates ON' : 'Live Updates OFF'"></span>
+        </button>
+        <div class="flex items-center space-x-2">
+          <div :class="connected ? 'bg-green-500' : 'bg-red-500'" class="w-2 h-2 rounded-full"></div>
+          <span class="text-xs text-gray-500 dark:text-gray-400" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content area -->
+  <div class="flex-1 overflow-y-auto p-4">
+    <div class="space-y-2">
+      <!-- Display entries in reverse order (newest first) -->
+      <template x-for="entry in filteredEntries" :key="entry.id">
+        <div
+          class="bg-gray-50 dark:bg-gray-800 rounded p-4 border border-gray-200 dark:border-gray-700"
+          :class="{ 'entry-appear': entry.isNew }"
+        >
+          <div class="flex items-start justify-between mb-2">
+            <div class="flex items-center space-x-3">
+              <!-- Error badge -->
+              <span class="px-2 py-1 text-xs font-mono font-semibold rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                ERROR
+              </span>
+              <!-- Error type -->
+              <span class="text-xs font-mono text-gray-700 dark:text-gray-300" x-text="entry.payload.type"></span>
+            </div>
+
+            <!-- Timestamp -->
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-mono" x-text="formatTimestamp(entry.payload.timestamp)"></span>
+          </div>
+
+          <!-- Error message -->
+          <div class="mb-3">
+            <div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Message:</div>
+            <pre class="text-xs text-gray-900 dark:text-gray-100 font-mono whitespace-pre-wrap break-words bg-white dark:bg-gray-900 p-2 rounded border border-gray-200 dark:border-gray-700" x-text="entry.payload.message"></pre>
+          </div>
+
+          <!-- Stack trace (collapsible) - only show if stack trace exists -->
+          <div x-data="{ expanded: false }" x-show="entry.payload.stackTrace && entry.payload.stackTrace.trim() !== ''">
+            <button
+              @click="expanded = !expanded"
+              class="flex items-center space-x-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+            >
+              <svg
+                class="w-4 h-4 transition-transform"
+                :class="{ 'rotate-90': expanded }"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+              </svg>
+              <span x-text="expanded ? 'Hide Stack Trace' : 'Show Stack Trace'"></span>
+            </button>
+            <div x-show="expanded" x-collapse>
+              <pre class="mt-2 text-xs text-gray-900 dark:text-gray-100 font-mono whitespace-pre-wrap break-words bg-white dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto" x-text="entry.payload.stackTrace"></pre>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Empty state -->
+      <template x-if="isBooted && entries.length === 0">
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No errors yet</p>
+        </div>
+      </template>
+
+      <!-- No matching results -->
+      <template x-if="isBooted && entries.length > 0 && filteredEntries.length === 0">
+        <div class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">No matching results</p>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+
+<script>
+  function errorsMonitor() {
+    return {
+      entries: [],
+      lastId: 0,
+      connected: false,
+      liveUpdatesEnabled: true,
+      eventSource: null,
+      isBooted: false,
+      searchQuery: '',
+
+      init: function () {
+        this.connectSSE();
+      },
+
+      get filteredEntries() {
+        let filtered = this.entries;
+
+        // Filter by search query
+        if (this.searchQuery.trim()) {
+          const query = this.searchQuery.toLowerCase();
+          filtered = filtered.filter(entry => {
+            const message = entry.payload?.message || '';
+            const type = entry.payload?.type || '';
+            const stackTrace = entry.payload?.stackTrace || '';
+            return message.toLowerCase().includes(query) ||
+                   type.toLowerCase().includes(query) ||
+                   stackTrace.toLowerCase().includes(query);
+          });
+        }
+
+        return filtered;
+      },
+
+      applyFilter() {
+        // Filter is applied reactively through the filteredEntries getter
+      },
+
+      toggleLiveUpdates() {
+        this.liveUpdatesEnabled = !this.liveUpdatesEnabled;
+
+        if (this.liveUpdatesEnabled) {
+          // Turn live updates ON
+          this.connectSSE();
+        } else {
+          // Turn live updates OFF
+          this.disconnectSSE();
+        }
+      },
+
+      connectSSE() {
+        // Don't connect if live updates are disabled
+        if (!this.liveUpdatesEnabled) {
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const monitor = params.get('monitor');
+
+        // Close existing connection if any
+        if (this.eventSource) {
+          this.eventSource.close();
+        }
+
+        this.eventSource = new EventSource(`?monitor=${monitor}&action=stream&since=${this.lastId}`);
+
+        this.eventSource.onopen = () => {
+          this.connected = true;
+          // Mark as booted once connection is established
+          this.isBooted = true;
+        };
+
+        this.eventSource.onerror = (error) => {
+          console.error('SSE connection error:', error);
+          this.connected = false;
+
+          // Only attempt to reconnect if live updates are still enabled
+          if (this.liveUpdatesEnabled) {
+            setTimeout(() => {
+              this.connectSSE();
+            }, 5000);
+          }
+        };
+
+        this.eventSource.onmessage = (event) => {
+          try {
+            const entry = JSON.parse(event.data);
+            // Mark as new for animation
+            entry.isNew = true;
+            this.entries.unshift(entry);
+            // Update last ID
+            this.lastId = entry.id;
+            // Remove isNew flag after animation completes
+            setTimeout(() => {
+              entry.isNew = false;
+            }, 350);
+          } catch (error) {
+            console.error('Failed to parse SSE message:', error);
+          }
+        };
+      },
+
+      disconnectSSE() {
+        if (this.eventSource) {
+          this.eventSource.close();
+          this.eventSource = null;
+          this.connected = false;
+        }
+      },
+
+      formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        const ms = String(date.getMilliseconds()).padStart(3, '0');
+        return `${hours}:${minutes}:${seconds}.${ms}`;
+      },
+
+      destroy() {
+        // Cleanup when component is destroyed
+        this.disconnectSSE();
+      }
+    }
+  }
+</script>

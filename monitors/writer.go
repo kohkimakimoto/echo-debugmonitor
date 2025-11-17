@@ -1,0 +1,68 @@
+package monitors
+
+import (
+	_ "embed"
+	"io"
+	"net/http"
+
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
+	"github.com/labstack/echo/v4"
+)
+
+type WriterPayload struct {
+	Data string `json:"data"`
+}
+
+type TeeWriter struct {
+	original io.Writer
+	monitor  *debugmonitor.Monitor
+}
+
+func (t *TeeWriter) Write(p []byte) (n int, err error) {
+	// Add to the original writer
+	n, err = t.original.Write(p)
+	if err != nil {
+		return n, err
+	}
+
+	// Also send the payload to the monitor
+	t.monitor.Add(&WriterPayload{
+		Data: string(p),
+	})
+
+	return n, nil
+}
+
+func NewLoggerWriterMonitor(logger echo.Logger) *debugmonitor.Monitor {
+	o := logger.Output()
+	m, w := NewWriterMonitor(o)
+	m.Name = "logger_writer"
+	m.DisplayName = "Logger Writer"
+	logger.SetOutput(w)
+	return m
+}
+
+//go:embed writer.html
+var writerView string
+
+func NewWriterMonitor(w io.Writer) (*debugmonitor.Monitor, io.Writer) {
+	m := &debugmonitor.Monitor{
+		Name:        "writer",
+		DisplayName: "Writer",
+		MaxRecords:  1000,
+		Icon:        debugmonitor.IconPencilSquare,
+		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+			switch action {
+			case "render":
+				return c.HTML(http.StatusOK, writerView)
+			case "stream":
+				// SSE endpoint for real-time updates
+				return debugmonitor.HandleSSEStream(c, store)
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest)
+			}
+
+		},
+	}
+	return m, &TeeWriter{original: w, monitor: m}
+}
