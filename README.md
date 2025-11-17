@@ -9,7 +9,7 @@
 A debugging and monitoring dashboard for Go applications using the [Echo](https://echo.labstack.com/) web framework.
 Provides real-time visibility into application behavior through multiple specialized monitors.
 
-![Screenshot](https://raw.githubusercontent.com/kohkimakimoto/echo-debugmonitor/main/images/screenshot.png)
+![](https://raw.githubusercontent.com/kohkimakimoto/echo-debugmonitor/main/images/screenshot.png)
 
 > [!WARNING]
 > This tool is intended for debugging and development purposes only. **Do not activate it in production environments** as it may expose sensitive information and impact performance.
