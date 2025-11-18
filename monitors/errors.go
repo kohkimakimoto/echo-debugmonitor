@@ -3,6 +3,7 @@ package monitors
 import (
 	_ "embed"
 	"fmt"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -22,12 +23,21 @@ type ErrorPayload struct {
 //go:embed errors.html
 var errorsView string
 
+// errorsViewTemplate is the parsed template for the errors view
+var errorsViewTemplate = template.Must(template.New("errorsView").Parse(errorsView))
+
 // ErrorRecorder is a function type for recording errors
 type ErrorRecorder func(err error)
 
+// ErrorsMonitorConfig defines the config for Errors monitor.
+type ErrorsMonitorConfig struct {
+	// UsePolling enables polling mode instead of SSE for real-time updates.
+	UsePolling bool
+}
+
 // NewErrorsMonitor creates a new monitor for errors and returns
 // the monitor along with an error recording function
-func NewErrorsMonitor() (*debugmonitor.Monitor, ErrorRecorder) {
+func NewErrorsMonitor(config ErrorsMonitorConfig) (*debugmonitor.Monitor, ErrorRecorder) {
 	m := &debugmonitor.Monitor{
 		Name:        "errors",
 		DisplayName: "Errors",
@@ -36,10 +46,15 @@ func NewErrorsMonitor() (*debugmonitor.Monitor, ErrorRecorder) {
 		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return c.HTML(http.StatusOK, errorsView)
+				return debugmonitor.RenderTemplate(c, errorsViewTemplate, map[string]any{
+					"UsePolling": config.UsePolling,
+				})
 			case "stream":
 				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
+			case "data":
+				// JSON endpoint for polling mode
+				return debugmonitor.HandleDataJSON(c, store)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -123,11 +138,11 @@ func containsStackTrace(s string) bool {
 	// Simple heuristic: stack traces usually contain file paths with line numbers
 	// Look for patterns like ".go:" which are common in Go stack traces
 	return len(s) > 100 && (
-		// Common patterns in stack traces
-		containsPattern(s, ".go:") ||
-			containsPattern(s, "goroutine ") ||
-			containsPattern(s, "\tat ") ||
-			containsPattern(s, "\n\t"))
+	// Common patterns in stack traces
+	containsPattern(s, ".go:") ||
+		containsPattern(s, "goroutine ") ||
+		containsPattern(s, "\tat ") ||
+		containsPattern(s, "\n\t"))
 }
 
 // containsPattern checks if a string contains a specific pattern

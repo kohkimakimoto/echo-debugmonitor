@@ -3,6 +3,7 @@ package monitors
 import (
 	_ "embed"
 	"fmt"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -29,10 +30,15 @@ type RequestsMonitorConfig struct {
 	// Skipper defines a function to skip middleware.
 	// Optional. Default: DefaultSkipper
 	Skipper middleware.Skipper
+	// UsePolling enables polling mode instead of SSE for real-time updates.
+	UsePolling bool
 }
 
 //go:embed requests.html
 var requestsView string
+
+// requestsViewTemplate is the parsed template for the requests view
+var requestsViewTemplate = template.Must(template.New("requestsView").Parse(requestsView))
 
 // NewRequestsMonitor creates a new monitor for HTTP requests and returns
 // the monitor along with an Echo middleware function that captures request information
@@ -53,10 +59,15 @@ func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, e
 		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return c.HTML(http.StatusOK, requestsView)
+				return debugmonitor.RenderTemplate(c, requestsViewTemplate, map[string]any{
+					"UsePolling": config.UsePolling,
+				})
 			case "stream":
 				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
+			case "data":
+				// JSON endpoint for polling mode
+				return debugmonitor.HandleDataJSON(c, store)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}

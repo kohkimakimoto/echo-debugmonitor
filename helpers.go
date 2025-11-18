@@ -1,14 +1,25 @@
 package debugmonitor
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
 )
+
+// RenderTemplate executes a template with the given data and returns the result as HTML response.
+func RenderTemplate(c echo.Context, tmpl *template.Template, data any) error {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return err
+	}
+	return c.HTML(http.StatusOK, buf.String())
+}
 
 func HandleSSEStream(c echo.Context, store *Store) error {
 	// Parse the sinceID parameter
@@ -81,4 +92,19 @@ func sendSSEEvent(c echo.Context, entry *DataEntry) error {
 	}
 	_, err = fmt.Fprintf(c.Response().Writer, "data: %s\n\n", data)
 	return err
+}
+
+// HandleDataJSON returns store entries as JSON for polling mode.
+// It accepts a "since" query parameter to return only entries with ID greater than the specified value.
+func HandleDataJSON(c echo.Context, store *Store) error {
+	// Parse the sinceID parameter
+	sinceID := int64(0)
+	if sinceIDStr := c.QueryParam("since"); sinceIDStr != "" {
+		if id, err := strconv.ParseInt(sinceIDStr, 10, 64); err == nil {
+			sinceID = id
+		}
+	}
+
+	entries := store.GetSince(sinceID)
+	return c.JSON(http.StatusOK, entries)
 }

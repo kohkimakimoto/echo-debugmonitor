@@ -34,14 +34,19 @@ func main() {
 	// ----------------------------------------------
 	// logs monitor
 	// ----------------------------------------------
-	logsMonitor, wrappedLogger := monitors.NewLogsMonitor(e.Logger)
+	logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
+		Logger: e.Logger,
+	})
+	// Replace the Echo logger with the wrapped logger
 	e.Logger = wrappedLogger
 	m.AddMonitor(logsMonitor)
 
 	// ----------------------------------------------
 	// writer monitor
 	// ----------------------------------------------
-	m.AddMonitor(monitors.NewLoggerWriterMonitor(e.Logger))
+	m.AddMonitor(monitors.NewLoggerWriterMonitor(monitors.LoggerWriterMonitorConfig{
+		Logger: e.Logger,
+	}))
 
 	// ----------------------------------------------
 	// queries monitor
@@ -56,7 +61,10 @@ func main() {
 
 	// Wrap the database driver with query monitoring
 	var queriesMonitor *debugmonitor.Monitor
-	queriesMonitor, db = monitors.NewQueriesMonitor(dsn, db.Driver())
+	queriesMonitor, db = monitors.NewQueriesMonitor(monitors.QueriesMonitorConfig{
+		DSN:    dsn,
+		Driver: db.Driver(),
+	})
 	m.AddMonitor(queriesMonitor)
 
 	// Initialize database schema
@@ -65,7 +73,7 @@ func main() {
 	// ----------------------------------------------
 	// errors monitor
 	// ----------------------------------------------
-	errorsMonitor, errorRecorder := monitors.NewErrorsMonitor()
+	errorsMonitor, errorRecorder := monitors.NewErrorsMonitor(monitors.ErrorsMonitorConfig{})
 	m.AddMonitor(errorsMonitor)
 
 	// Wrap the default error handler to record errors
