@@ -3,6 +3,7 @@ package monitors
 import (
 	_ "embed"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"time"
@@ -22,15 +23,26 @@ type LogPayload struct {
 //go:embed logs.html
 var logsView string
 
+// logsViewTemplate is the parsed template for the logs view
+var logsViewTemplate = template.Must(template.New("logsView").Parse(logsView))
+
 // LoggerWrapper wraps an echo.Logger and intercepts all logging calls
 type LoggerWrapper struct {
 	original echo.Logger
 	monitor  *debugmonitor.Monitor
 }
 
+// LogsMonitorConfig defines the config for Logs monitor.
+type LogsMonitorConfig struct {
+	// Logger is the original echo.Logger to wrap with monitoring.
+	Logger echo.Logger
+	// UsePolling enables polling mode instead of SSE for real-time updates.
+	UsePolling bool
+}
+
 // NewLogsMonitor creates a new monitor for logging and returns
 // the monitor along with a wrapped logger
-func NewLogsMonitor(logger echo.Logger) (*debugmonitor.Monitor, echo.Logger) {
+func NewLogsMonitor(config LogsMonitorConfig) (*debugmonitor.Monitor, echo.Logger) {
 	m := &debugmonitor.Monitor{
 		Name:        "logs",
 		DisplayName: "Logs",
@@ -39,10 +51,15 @@ func NewLogsMonitor(logger echo.Logger) (*debugmonitor.Monitor, echo.Logger) {
 		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return c.HTML(http.StatusOK, logsView)
+				return debugmonitor.RenderTemplate(c, logsViewTemplate, map[string]any{
+					"UsePolling": config.UsePolling,
+				})
 			case "stream":
 				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
+			case "data":
+				// JSON endpoint for polling mode
+				return debugmonitor.HandleDataJSON(c, store)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -50,7 +67,7 @@ func NewLogsMonitor(logger echo.Logger) (*debugmonitor.Monitor, echo.Logger) {
 	}
 
 	wrapper := &LoggerWrapper{
-		original: logger,
+		original: config.Logger,
 		monitor:  m,
 	}
 

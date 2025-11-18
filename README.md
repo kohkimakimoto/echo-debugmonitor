@@ -51,7 +51,9 @@ func main() {
     m.AddMonitor(requestsMonitor)
 
     // Add logs monitor
-    logsMonitor, wrappedLogger := monitors.NewLogsMonitor(e.Logger)
+    logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
+        Logger: e.Logger,
+    })
     e.Logger = wrappedLogger
     m.AddMonitor(logsMonitor)
 

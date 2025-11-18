@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	_ "embed"
 	"fmt"
+	"html/template"
 	"net/http"
 	"time"
 
@@ -26,10 +27,23 @@ type QueryPayload struct {
 //go:embed queries.html
 var queriesView string
 
+// queriesViewTemplate is the parsed template for the queries view
+var queriesViewTemplate = template.Must(template.New("queriesView").Parse(queriesView))
+
+// QueriesMonitorConfig defines the config for Queries monitor.
+type QueriesMonitorConfig struct {
+	// DSN is the data source name for the database connection.
+	DSN string
+	// Driver is the database driver to wrap with monitoring.
+	Driver driver.Driver
+	// UsePolling enables polling mode instead of SSE for real-time updates.
+	UsePolling bool
+}
+
 // NewQueriesMonitor creates a new monitor for database queries and returns a wrapped *sql.DB.
 // This function wraps an existing database driver with monitoring capabilities without requiring
 // changes to existing *sql.DB usage code.
-func NewQueriesMonitor(dsn string, drv driver.Driver) (*debugmonitor.Monitor, *sql.DB) {
+func NewQueriesMonitor(config QueriesMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
 	m := &debugmonitor.Monitor{
 		Name:        "queries",
 		DisplayName: "Queries",
@@ -38,10 +52,15 @@ func NewQueriesMonitor(dsn string, drv driver.Driver) (*debugmonitor.Monitor, *s
 		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return c.HTML(http.StatusOK, queriesView)
+				return debugmonitor.RenderTemplate(c, queriesViewTemplate, map[string]any{
+					"UsePolling": config.UsePolling,
+				})
 			case "stream":
 				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
+			case "data":
+				// JSON endpoint for polling mode
+				return debugmonitor.HandleDataJSON(c, store)
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest)
 			}
@@ -50,8 +69,8 @@ func NewQueriesMonitor(dsn string, drv driver.Driver) (*debugmonitor.Monitor, *s
 
 	// Create a monitored connector
 	connector := &monitoredConnector{
-		driver:  drv,
-		dsn:     dsn,
+		driver:  config.Driver,
+		dsn:     config.DSN,
 		monitor: m,
 	}
 

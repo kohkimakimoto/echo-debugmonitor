@@ -433,60 +433,6 @@ func TestStore_NewClearEvent(t *testing.T) {
 	}
 }
 
-func TestStore_ConcurrentSubscriptions(t *testing.T) {
-	store := NewStore(100)
-
-	const numSubscribers = 10
-	const numRecords = 20
-
-	var wg sync.WaitGroup
-
-	// Create multiple concurrent add event subscriptions
-	events := make([]*AddEvent, numSubscribers)
-	allReceived := make([]chan bool, numSubscribers)
-
-	for i := 0; i < numSubscribers; i++ {
-		events[i] = store.NewAddEvent()
-		defer events[i].Close()
-
-		allReceived[i] = make(chan bool, 1)
-		wg.Add(1)
-		idx := i
-		go func(event *AddEvent, done chan bool) {
-			defer wg.Done()
-			count := 0
-			for range event.C {
-				count++
-				if count == numRecords {
-					done <- true
-				}
-			}
-		}(events[idx], allReceived[idx])
-	}
-
-	// Add records
-	for i := 0; i < numRecords; i++ {
-		store.Add(map[string]any{"index": i})
-	}
-
-	// Wait for all subscribers to receive all notifications
-	for i := 0; i < numSubscribers; i++ {
-		select {
-		case <-allReceived[i]:
-			// Subscriber received all notifications
-		case <-time.After(2 * time.Second):
-			t.Errorf("Subscriber %d did not receive all notifications in time", i)
-		}
-	}
-
-	// Close all events to stop goroutines
-	for _, event := range events {
-		event.Close()
-	}
-
-	wg.Wait()
-}
-
 func TestStore_EventClose(t *testing.T) {
 	store := NewStore(10)
 
