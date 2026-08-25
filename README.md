@@ -1,13 +1,15 @@
 # Echo Debug Monitor
 
-[![test](https://github.com/kohkimakimoto/echo-debugmonitor/actions/workflows/test.yml/badge.svg)](https://github.com/kohkimakimoto/echo-debugmonitor/actions/workflows/test.yml)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kohkimakimoto/echo-debugmonitor/blob/master/LICENSE)
-[![Go Reference](https://pkg.go.dev/badge/github.com/kohkimakimoto/echo-debugmonitor.svg)](https://pkg.go.dev/github.com/kohkimakimoto/echo-debugmonitor)
+[![test](https://github.com/kohkimakimoto/echo-debugmonitor/actions/workflows/test.yml/badge.svg?branch=v4)](https://github.com/kohkimakimoto/echo-debugmonitor/actions/workflows/test.yml?query=branch%3Av4)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kohkimakimoto/echo-debugmonitor/blob/v4/LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/kohkimakimoto/echo-debugmonitor/v4.svg)](https://pkg.go.dev/github.com/kohkimakimoto/echo-debugmonitor/v4)
 
 **This repository is still under active development. Documentation is incomplete and breaking changes may occur.**
 
 A debugging and monitoring dashboard for Go applications using the [Echo](https://echo.labstack.com/) web framework.
 Provides real-time visibility into application behavior through multiple specialized monitors.
+
+This `v4` release line supports Echo v4. The major version of Echo Debug Monitor matches the supported Echo major version.
 
 ![](https://raw.githubusercontent.com/kohkimakimoto/echo-debugmonitor/main/images/screenshot.png)
 
@@ -19,7 +21,7 @@ Provides real-time visibility into application behavior through multiple special
 ### Installation
 
 ```bash
-go get github.com/kohkimakimoto/echo-debugmonitor
+go get github.com/kohkimakimoto/echo-debugmonitor/v4
 ```
 
 ### Basic Usage
@@ -31,8 +33,8 @@ package main
 
 import (
     "github.com/labstack/echo/v4"
-    debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
-    "github.com/kohkimakimoto/echo-debugmonitor/monitors"
+    debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
+    "github.com/kohkimakimoto/echo-debugmonitor/v4/monitors"
 )
 
 func main() {
@@ -86,7 +88,7 @@ You can also implement custom monitors for your specific needs.
 
 ## Built-in Monitors
 
-Echo Debug Monitor includes several ready-to-use monitors in the `github.com/kohkimakimoto/echo-debugmonitor/monitors` package:
+Echo Debug Monitor includes several ready-to-use monitors in the `github.com/kohkimakimoto/echo-debugmonitor/v4/monitors` package:
 
 - **Requests Monitor**: Tracks incoming HTTP requests, response statuses, latencies, etc.
 - **Logs Monitor**: Captures application logs and displays them in real-time.

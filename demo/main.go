@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
-	"github.com/kohkimakimoto/echo-debugmonitor/monitors"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
+	"github.com/kohkimakimoto/echo-debugmonitor/v4/monitors"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	_ "modernc.org/sqlite"

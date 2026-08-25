@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
 	"github.com/labstack/echo/v4"
 )
 

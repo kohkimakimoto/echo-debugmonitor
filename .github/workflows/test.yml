@@ -5,9 +5,13 @@ on:
   push:
     branches:
       - main
+      - v4
+    tags:
+      - "v*"
   pull_request:
     branches:
       - main
+      - v4
 
 jobs:
   test:
@@ -18,4 +22,4 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: make test
+      - run: make test-all

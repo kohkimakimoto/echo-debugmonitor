@@ -45,6 +45,13 @@ format: ## Format source code
 test: ## Run tests
 	@go test -race -timeout 30m ./...
 
+.PHONY: test-demo
+test-demo: ## Compile and test the demo module
+	@go test -C ./demo -race -timeout 30m ./...
+
+.PHONY: test-all
+test-all: test test-demo ## Run all tests
+
 .PHONY: test-short
 test-short: ## Run short tests
 	@go test -short -race -timeout 30m ./...
