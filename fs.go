@@ -3,7 +3,7 @@ package debugmonitor
 import (
 	"embed"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 var (

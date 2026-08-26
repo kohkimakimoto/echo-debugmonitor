@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 type Manager struct {
@@ -46,7 +46,7 @@ func (m *Manager) Monitors() []*Monitor {
 func (m *Manager) Handler() echo.HandlerFunc {
 	t := template.Must(template.New("T").ParseFS(viewsFS, "*.html"))
 
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		if c.Request().Method == http.MethodGet {
 			// Check if a file query parameter is present
 			file := c.QueryParam("file")
@@ -89,40 +89,37 @@ func (m *Manager) Handler() echo.HandlerFunc {
 			})
 		}
 
-		return echo.NewHTTPError(http.StatusMethodNotAllowed)
+		return echo.NewHTTPError(http.StatusMethodNotAllowed, "method not allowed")
 	}
 }
 
 // serveStaticFile serves static files (app.js or app.css) from assetsFS
-func serveStaticFile(c echo.Context, filename string) error {
+func serveStaticFile(c *echo.Context, filename string) error {
 	switch filename {
 	case "app.js":
 		return serveAsset(c, "app.js", "application/javascript")
 	case "tailwindcss.js":
 		return serveAsset(c, "tailwindcss.js", "application/javascript")
 	default:
-		return echo.NewHTTPError(http.StatusNotFound)
+		return echo.NewHTTPError(http.StatusNotFound, "file not found")
 	}
 }
 
 // serveAsset is a helper function that serves a file with the specified content type
-func serveAsset(c echo.Context, filename string, contentType string) error {
-	// Open the file from assetsFS
+func serveAsset(c *echo.Context, filename string, contentType string) error {
 	f, err := assetsFS.Open(filename)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusNotFound)
+		return echo.NewHTTPError(http.StatusNotFound, "file not found")
 	}
 	defer f.Close()
 
-	// Set the content type header
-	c.Response().Header().Set("Content-Type", contentType)
-
-	// Copy the file contents to the response
-	_, err = io.Copy(c.Response().Writer, f)
+	rw := c.Response()
+	rw.Header().Set("Content-Type", contentType)
+	_, err = io.Copy(rw, f)
 	return err
 }
 
-func renderView(t *template.Template, c echo.Context, code int, viewName string, data map[string]any) error {
+func renderView(t *template.Template, c *echo.Context, code int, viewName string, data map[string]any) error {
 	buf := new(bytes.Buffer)
 	if err := t.ExecuteTemplate(buf, viewName, data); err != nil {
 		return err

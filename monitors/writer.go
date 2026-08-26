@@ -6,8 +6,8 @@ import (
 	"io"
 	"net/http"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
 )
 
 type WriterPayload struct {
@@ -20,39 +20,16 @@ type TeeWriter struct {
 }
 
 func (t *TeeWriter) Write(p []byte) (n int, err error) {
-	// Add to the original writer
 	n, err = t.original.Write(p)
 	if err != nil {
 		return n, err
 	}
 
-	// Also send the payload to the monitor
 	t.monitor.Add(&WriterPayload{
 		Data: string(p),
 	})
 
 	return n, nil
-}
-
-// LoggerWriterMonitorConfig is the configuration for the logger writer monitor.
-type LoggerWriterMonitorConfig struct {
-	// Logger is the echo.Logger to wrap with monitoring.
-	Logger echo.Logger
-	// UsePolling enables polling mode instead of SSE for real-time updates.
-	UsePolling bool
-}
-
-// NewLoggerWriterMonitor creates a logger writer monitor with the given configuration.
-func NewLoggerWriterMonitor(config LoggerWriterMonitorConfig) *debugmonitor.Monitor {
-	o := config.Logger.Output()
-	m, w := NewWriterMonitor(WriterMonitorConfig{
-		UsePolling: config.UsePolling,
-		Writer:     o,
-	})
-	m.Name = "logger_writer"
-	m.DisplayName = "Logger Writer"
-	config.Logger.SetOutput(w)
-	return m
 }
 
 //go:embed writer.html
@@ -78,20 +55,18 @@ func NewWriterMonitor(config WriterMonitorConfig) (*debugmonitor.Monitor, io.Wri
 		DisplayName: "Writer",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconPencilSquare,
-		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
 				return debugmonitor.RenderTemplate(c, writerViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":
-				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
 			case "data":
-				// JSON endpoint for polling mode
 				return debugmonitor.HandleDataJSON(c, store)
 			default:
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return echo.NewHTTPError(http.StatusBadRequest, "unknown action")
 			}
 		},
 	}
