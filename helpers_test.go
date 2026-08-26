@@ -45,8 +45,13 @@ func TestHandleSSEStreamSendsInitialDataAndStopsOnDisconnect(t *testing.T) {
 	if contentType := response.Header().Get("Content-Type"); contentType != "text/event-stream" {
 		t.Fatalf("expected SSE content type, got %q", contentType)
 	}
-	if body := response.Body.String(); !strings.Contains(body, `"message":"ready"`) {
+	body := response.Body.String()
+	if !strings.Contains(body, `"message":"ready"`) {
 		t.Fatalf("expected initial SSE data, got %q", body)
+	}
+	// Ensure Snowflake IDs are string-encoded so browsers keep full precision.
+	if !strings.Contains(body, `"id":"`) {
+		t.Fatalf("expected SSE id to be a JSON string, got %q", body)
 	}
 }
 

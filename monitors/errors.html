@@ -108,7 +108,7 @@
   function errorsMonitor(usePolling) {
     return {
       entries: [],
-      lastId: 0,
+      lastId: '0',
       connected: false,
       liveUpdatesEnabled: true,
       eventSource: null,
@@ -141,7 +141,7 @@
             for (let i = entries.length - 1; i >= 0; i--) {
               const entry = entries[i];
               this.entries.unshift(entry);
-              if (entry.id > this.lastId) {
+              if (BigInt(entry.id) > BigInt(this.lastId)) {
                 this.lastId = entry.id;
               }
             }
@@ -222,7 +222,7 @@
                 // Mark as new for animation
                 entry.isNew = true;
                 this.entries.unshift(entry);
-                if (entry.id > this.lastId) {
+                if (BigInt(entry.id) > BigInt(this.lastId)) {
                   this.lastId = entry.id;
                 }
                 // Remove isNew flag after animation completes
