@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
 )
 
 func TestRequestsMonitorRecordsResponse(t *testing.T) {
@@ -18,7 +19,7 @@ func TestRequestsMonitorRecordsResponse(t *testing.T) {
 	monitor, middleware := NewRequestsMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
-	e.GET("/created", func(c echo.Context) error {
+	e.GET("/created", func(c *echo.Context) error {
 		return c.String(http.StatusCreated, "created")
 	})
 	e.GET("/monitor", manager.Handler())
@@ -47,7 +48,7 @@ func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
 	monitor, middleware := NewRequestsMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
-	e.GET("/teapot", func(c echo.Context) error {
+	e.GET("/teapot", func(c *echo.Context) error {
 		return echo.NewHTTPError(http.StatusTeapot, "short and stout")
 	})
 	e.GET("/monitor", manager.Handler())
@@ -78,14 +79,14 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	e.GET("/monitor", manager.Handler())
 
 	delegated := false
-	handler := HTTPErrorHandlerWrapper(recorder, func(err error, c echo.Context) {
+	handler := HTTPErrorHandlerWrapper(recorder, func(c *echo.Context, err error) {
 		delegated = true
 	})
 	wantErr := errors.New("handler failed")
-	handler(wantErr, e.NewContext(
+	handler(e.NewContext(
 		httptest.NewRequest(http.MethodGet, "/failed", nil),
 		httptest.NewRecorder(),
-	))
+	), wantErr)
 
 	if !delegated {
 		t.Fatal("expected wrapped error handler to delegate")
@@ -101,9 +102,9 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 
 func TestLogsMonitorRecordsMessage(t *testing.T) {
 	e := echo.New()
-	e.Logger.SetOutput(io.Discard)
 	manager := debugmonitor.New()
-	monitor, logger := NewLogsMonitor(LogsMonitorConfig{Logger: e.Logger})
+	base := slog.New(slog.NewTextHandler(io.Discard, nil))
+	monitor, logger := NewLogsMonitor(LogsMonitorConfig{Logger: base})
 	manager.AddMonitor(monitor)
 	e.GET("/monitor", manager.Handler())
 

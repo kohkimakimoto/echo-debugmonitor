@@ -2,14 +2,13 @@ package monitors
 
 import (
 	_ "embed"
-	"fmt"
 	"html/template"
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 // RequestPayload represents the data structure for HTTP request monitoring
@@ -56,7 +55,7 @@ func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, e
 		DisplayName: "Requests",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconGlobeAlt,
-		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
 				return debugmonitor.RenderTemplate(c, requestsViewTemplate, map[string]any{
@@ -69,34 +68,24 @@ func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, e
 				// JSON endpoint for polling mode
 				return debugmonitor.HandleDataJSON(c, store)
 			default:
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return echo.NewHTTPError(http.StatusBadRequest, "unknown action")
 			}
 		},
 	}
 
 	// Create middleware that captures request information
 	mw := func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			// Check if request should be skipped
+		return func(c *echo.Context) error {
 			if config.Skipper(c) {
 				return next(c)
 			}
 
 			start := time.Now()
-
-			// Process the request
 			err := next(c)
-
-			// Calculate latency
 			latency := time.Since(start)
 
-			// Get response status
-			status := c.Response().Status
-			if status == 0 {
-				status = http.StatusOK
-			}
+			_, status := echo.ResolveResponseStatus(c.Response(), err)
 
-			// Create payload
 			payload := &RequestPayload{
 				Method:     c.Request().Method,
 				URI:        c.Request().RequestURI,
@@ -107,7 +96,6 @@ func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, e
 				Timestamp:  start,
 			}
 
-			// Include headers if configured
 			payload.Headers = make(map[string]string)
 			for key, values := range c.Request().Header {
 				if len(values) > 0 {
@@ -115,17 +103,15 @@ func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, e
 				}
 			}
 
-			// Include error if any
 			if err != nil {
 				if he, ok := err.(*echo.HTTPError); ok {
 					payload.Status = he.Code
-					payload.Error = fmt.Sprintf("%v", he.Message)
+					payload.Error = he.Message
 				} else {
 					payload.Error = err.Error()
 				}
 			}
 
-			// Add to monitor
 			m.Add(payload)
 
 			return err

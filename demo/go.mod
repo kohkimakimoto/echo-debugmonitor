@@ -3,8 +3,8 @@ module github.com/kohkimakimoto/echo-debugmonitor/demo
 go 1.25.0
 
 require (
-	github.com/kohkimakimoto/echo-debugmonitor/v4 v4.0.0
-	github.com/labstack/echo/v4 v4.15.4
+	github.com/kohkimakimoto/echo-debugmonitor/v5 v5.0.0
+	github.com/labstack/echo/v5 v5.3.1
 	github.com/pkg/errors v0.9.1
 	modernc.org/sqlite v1.40.0
 )
@@ -12,22 +12,15 @@ require (
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/labstack/gommon v0.5.0 // indirect
-	github.com/mattn/go-colorable v0.1.15 // indirect
-	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.2.2 // indirect
-	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
-	golang.org/x/net v0.56.0 // indirect
-	golang.org/x/sys v0.46.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	modernc.org/libc v1.66.10 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
 
-replace github.com/kohkimakimoto/echo-debugmonitor/v4 => ..
+replace github.com/kohkimakimoto/echo-debugmonitor/v5 => ..

@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
 )
 
 // ErrorPayload represents the data structure for error monitoring
@@ -43,7 +43,7 @@ func NewErrorsMonitor(config ErrorsMonitorConfig) (*debugmonitor.Monitor, ErrorR
 		DisplayName: "Errors",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconExclamationCircle,
-		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
 				return debugmonitor.RenderTemplate(c, errorsViewTemplate, map[string]any{
@@ -56,27 +56,20 @@ func NewErrorsMonitor(config ErrorsMonitorConfig) (*debugmonitor.Monitor, ErrorR
 				// JSON endpoint for polling mode
 				return debugmonitor.HandleDataJSON(c, store)
 			default:
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return echo.NewHTTPError(http.StatusBadRequest, "unknown action")
 			}
 		},
 	}
 
-	// Create error recorder function
 	recorder := func(err error) {
 		if err == nil {
 			return
 		}
 
-		// Get error type
 		errorType := fmt.Sprintf("%T", err)
-
-		// Get error message
 		errorMessage := err.Error()
-
-		// Extract stack trace from the error
 		stackTrace := extractStackTrace(err)
 
-		// Add error to monitor
 		m.Add(&ErrorPayload{
 			Error:      errorMessage,
 			Type:       errorType,
@@ -90,13 +83,11 @@ func NewErrorsMonitor(config ErrorsMonitorConfig) (*debugmonitor.Monitor, ErrorR
 }
 
 // HTTPErrorHandlerWrapper returns an echo.HTTPErrorHandler that records errors
-// and then delegates to the provided handler
+// and then delegates to the provided handler.
 func HTTPErrorHandlerWrapper(recorder ErrorRecorder, handler echo.HTTPErrorHandler) echo.HTTPErrorHandler {
-	return func(err error, c echo.Context) {
-		// Record the error
+	return func(c *echo.Context, err error) {
 		recorder(err)
-		// Delegate to the original handler
-		handler(err, c)
+		handler(c, err)
 	}
 }
 

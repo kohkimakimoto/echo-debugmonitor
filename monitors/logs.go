@@ -1,16 +1,15 @@
 package monitors
 
 import (
+	"context"
 	_ "embed"
-	"fmt"
 	"html/template"
-	"io"
+	"log/slog"
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/gommon/log"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
 )
 
 // LogPayload represents the data structure for log monitoring
@@ -26,220 +25,70 @@ var logsView string
 // logsViewTemplate is the parsed template for the logs view
 var logsViewTemplate = template.Must(template.New("logsView").Parse(logsView))
 
-// LoggerWrapper wraps an echo.Logger and intercepts all logging calls
-type LoggerWrapper struct {
-	original echo.Logger
-	monitor  *debugmonitor.Monitor
+// monitorHandler wraps a slog.Handler and records each log to the monitor.
+type monitorHandler struct {
+	next    slog.Handler
+	monitor *debugmonitor.Monitor
+}
+
+func (h *monitorHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return h.next.Enabled(ctx, level)
+}
+
+func (h *monitorHandler) Handle(ctx context.Context, r slog.Record) error {
+	h.monitor.Add(&LogPayload{
+		Level:     r.Level.String(),
+		Message:   r.Message,
+		Timestamp: r.Time,
+	})
+	return h.next.Handle(ctx, r)
+}
+
+func (h *monitorHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	return &monitorHandler{next: h.next.WithAttrs(attrs), monitor: h.monitor}
+}
+
+func (h *monitorHandler) WithGroup(name string) slog.Handler {
+	return &monitorHandler{next: h.next.WithGroup(name), monitor: h.monitor}
 }
 
 // LogsMonitorConfig defines the config for Logs monitor.
 type LogsMonitorConfig struct {
-	// Logger is the original echo.Logger to wrap with monitoring.
-	Logger echo.Logger
+	// Logger is the original slog.Logger whose handler will be wrapped.
+	// If nil, slog.Default() is used.
+	Logger *slog.Logger
 	// UsePolling enables polling mode instead of SSE for real-time updates.
 	UsePolling bool
 }
 
 // NewLogsMonitor creates a new monitor for logging and returns
-// the monitor along with a wrapped logger
-func NewLogsMonitor(config LogsMonitorConfig) (*debugmonitor.Monitor, echo.Logger) {
+// the monitor along with a wrapped slog.Logger.
+func NewLogsMonitor(config LogsMonitorConfig) (*debugmonitor.Monitor, *slog.Logger) {
 	m := &debugmonitor.Monitor{
 		Name:        "logs",
 		DisplayName: "Logs",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconDocumentText,
-		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
 				return debugmonitor.RenderTemplate(c, logsViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":
-				// SSE endpoint for real-time updates
 				return debugmonitor.HandleSSEStream(c, store)
 			case "data":
-				// JSON endpoint for polling mode
 				return debugmonitor.HandleDataJSON(c, store)
 			default:
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return echo.NewHTTPError(http.StatusBadRequest, "unknown action")
 			}
 		},
 	}
 
-	wrapper := &LoggerWrapper{
-		original: config.Logger,
-		monitor:  m,
+	base := config.Logger
+	if base == nil {
+		base = slog.Default()
 	}
 
-	return m, wrapper
-}
-
-// addLog is a helper function to add log entries to the monitor
-func (l *LoggerWrapper) addLog(level string, message string) {
-	l.monitor.Add(&LogPayload{
-		Level:     level,
-		Message:   message,
-		Timestamp: time.Now(),
-	})
-}
-
-// Output returns the output writer
-func (l *LoggerWrapper) Output() io.Writer {
-	return l.original.Output()
-}
-
-// SetOutput sets the output writer
-func (l *LoggerWrapper) SetOutput(w io.Writer) {
-	l.original.SetOutput(w)
-}
-
-// Prefix returns the prefix
-func (l *LoggerWrapper) Prefix() string {
-	return l.original.Prefix()
-}
-
-// SetPrefix sets the prefix
-func (l *LoggerWrapper) SetPrefix(p string) {
-	l.original.SetPrefix(p)
-}
-
-// Level returns the log level
-func (l *LoggerWrapper) Level() log.Lvl {
-	return l.original.Level()
-}
-
-// SetLevel sets the log level
-func (l *LoggerWrapper) SetLevel(v log.Lvl) {
-	l.original.SetLevel(v)
-}
-
-// SetHeader sets the log header
-func (l *LoggerWrapper) SetHeader(h string) {
-	l.original.SetHeader(h)
-}
-
-// Print logs a message at print level
-func (l *LoggerWrapper) Print(i ...interface{}) {
-	l.original.Print(i...)
-	l.addLog("PRINT", fmt.Sprint(i...))
-}
-
-// Printf logs a formatted message at print level
-func (l *LoggerWrapper) Printf(format string, args ...interface{}) {
-	l.original.Printf(format, args...)
-	l.addLog("PRINT", fmt.Sprintf(format, args...))
-}
-
-// Printj logs a JSON message at print level
-func (l *LoggerWrapper) Printj(j log.JSON) {
-	l.original.Printj(j)
-	l.addLog("PRINT", fmt.Sprintf("%v", j))
-}
-
-// Debug logs a message at debug level
-func (l *LoggerWrapper) Debug(i ...interface{}) {
-	l.original.Debug(i...)
-	l.addLog("DEBUG", fmt.Sprint(i...))
-}
-
-// Debugf logs a formatted message at debug level
-func (l *LoggerWrapper) Debugf(format string, args ...interface{}) {
-	l.original.Debugf(format, args...)
-	l.addLog("DEBUG", fmt.Sprintf(format, args...))
-}
-
-// Debugj logs a JSON message at debug level
-func (l *LoggerWrapper) Debugj(j log.JSON) {
-	l.original.Debugj(j)
-	l.addLog("DEBUG", fmt.Sprintf("%v", j))
-}
-
-// Info logs a message at info level
-func (l *LoggerWrapper) Info(i ...interface{}) {
-	l.original.Info(i...)
-	l.addLog("INFO", fmt.Sprint(i...))
-}
-
-// Infof logs a formatted message at info level
-func (l *LoggerWrapper) Infof(format string, args ...interface{}) {
-	l.original.Infof(format, args...)
-	l.addLog("INFO", fmt.Sprintf(format, args...))
-}
-
-// Infoj logs a JSON message at info level
-func (l *LoggerWrapper) Infoj(j log.JSON) {
-	l.original.Infoj(j)
-	l.addLog("INFO", fmt.Sprintf("%v", j))
-}
-
-// Warn logs a message at warn level
-func (l *LoggerWrapper) Warn(i ...interface{}) {
-	l.original.Warn(i...)
-	l.addLog("WARN", fmt.Sprint(i...))
-}
-
-// Warnf logs a formatted message at warn level
-func (l *LoggerWrapper) Warnf(format string, args ...interface{}) {
-	l.original.Warnf(format, args...)
-	l.addLog("WARN", fmt.Sprintf(format, args...))
-}
-
-// Warnj logs a JSON message at warn level
-func (l *LoggerWrapper) Warnj(j log.JSON) {
-	l.original.Warnj(j)
-	l.addLog("WARN", fmt.Sprintf("%v", j))
-}
-
-// Error logs a message at error level
-func (l *LoggerWrapper) Error(i ...interface{}) {
-	l.original.Error(i...)
-	l.addLog("ERROR", fmt.Sprint(i...))
-}
-
-// Errorf logs a formatted message at error level
-func (l *LoggerWrapper) Errorf(format string, args ...interface{}) {
-	l.original.Errorf(format, args...)
-	l.addLog("ERROR", fmt.Sprintf(format, args...))
-}
-
-// Errorj logs a JSON message at error level
-func (l *LoggerWrapper) Errorj(j log.JSON) {
-	l.original.Errorj(j)
-	l.addLog("ERROR", fmt.Sprintf("%v", j))
-}
-
-// Fatal logs a message at fatal level
-func (l *LoggerWrapper) Fatal(i ...interface{}) {
-	l.addLog("FATAL", fmt.Sprint(i...))
-	l.original.Fatal(i...)
-}
-
-// Fatalf logs a formatted message at fatal level
-func (l *LoggerWrapper) Fatalf(format string, args ...interface{}) {
-	l.addLog("FATAL", fmt.Sprintf(format, args...))
-	l.original.Fatalf(format, args...)
-}
-
-// Fatalj logs a JSON message at fatal level
-func (l *LoggerWrapper) Fatalj(j log.JSON) {
-	l.addLog("FATAL", fmt.Sprintf("%v", j))
-	l.original.Fatalj(j)
-}
-
-// Panic logs a message at panic level
-func (l *LoggerWrapper) Panic(i ...interface{}) {
-	l.addLog("PANIC", fmt.Sprint(i...))
-	l.original.Panic(i...)
-}
-
-// Panicf logs a formatted message at panic level
-func (l *LoggerWrapper) Panicf(format string, args ...interface{}) {
-	l.addLog("PANIC", fmt.Sprintf(format, args...))
-	l.original.Panicf(format, args...)
-}
-
-// Panicj logs a JSON message at panic level
-func (l *LoggerWrapper) Panicj(j log.JSON) {
-	l.addLog("PANIC", fmt.Sprintf("%v", j))
-	l.original.Panicj(j)
+	return m, slog.New(&monitorHandler{next: base.Handler(), monitor: m})
 }

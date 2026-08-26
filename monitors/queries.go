@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v4"
-	"github.com/labstack/echo/v4"
+	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
+	"github.com/labstack/echo/v5"
 )
 
 // QueryPayload represents the data structure for database query monitoring
@@ -49,7 +49,7 @@ func NewQueriesMonitor(config QueriesMonitorConfig) (*debugmonitor.Monitor, *sql
 		DisplayName: "Queries",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconCircleStack,
-		ActionHandler: func(c echo.Context, store *debugmonitor.Store, action string) error {
+		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
 				return debugmonitor.RenderTemplate(c, queriesViewTemplate, map[string]any{
@@ -62,7 +62,7 @@ func NewQueriesMonitor(config QueriesMonitorConfig) (*debugmonitor.Monitor, *sql
 				// JSON endpoint for polling mode
 				return debugmonitor.HandleDataJSON(c, store)
 			default:
-				return echo.NewHTTPError(http.StatusBadRequest)
+				return echo.NewHTTPError(http.StatusBadRequest, "unknown action")
 			}
 		},
 	}
