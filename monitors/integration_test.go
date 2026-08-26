@@ -119,7 +119,7 @@ func TestLogsMonitorRecordsMessage(t *testing.T) {
 }
 
 type monitorEntry[T any] struct {
-	ID      int64 `json:"id"`
+	ID      int64 `json:"id,string"`
 	Payload T     `json:"payload"`
 }
 

@@ -6,8 +6,10 @@ import (
 )
 
 // DataEntry represents a single data record with its ID.
+// Id is encoded as a JSON string so browsers keep full int64 precision
+// (JSON numbers are IEEE-754 floats and lose precision above 2^53-1).
 type DataEntry struct {
-	Id      int64 `json:"id"`
+	Id      int64 `json:"id,string"`
 	Payload any   `json:"payload"`
 }
 

@@ -1,6 +1,8 @@
 package debugmonitor
 
 import (
+	"encoding/json"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -455,4 +457,29 @@ func TestStore_EventClose(t *testing.T) {
 
 	// Calling Close again should be safe
 	event.Close()
+}
+
+func TestDataEntry_JSONMarshalsIDAsString(t *testing.T) {
+	// IDs above Number.MAX_SAFE_INTEGER must remain exact in JSON for browser clients.
+	const id int64 = 13643757185138689
+	entry := &DataEntry{
+		Id:      id,
+		Payload: map[string]string{"message": "test"},
+	}
+
+	data, err := json.Marshal(entry)
+	if err != nil {
+		t.Fatalf("marshal DataEntry: %v", err)
+	}
+	if !strings.Contains(string(data), `"id":"13643757185138689"`) {
+		t.Fatalf("expected id to be encoded as a JSON string, got %s", data)
+	}
+
+	var decoded DataEntry
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal DataEntry: %v", err)
+	}
+	if decoded.Id != id {
+		t.Fatalf("expected id %d after round-trip, got %d", id, decoded.Id)
+	}
 }
