@@ -1,8 +1,6 @@
 const esbuild = require('esbuild');
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
-const { glob } = require('glob');
 
 async function build() {
   // Create output directories if they don't exist
@@ -13,7 +11,7 @@ async function build() {
   }
 
   try {
-    // Copy tailwindcss runtime
+    // Copy standalone TailwindCSS browser runtime for third-party monitors
     console.log('Copying TailwindCSS runtime...');
     fs.copyFileSync(
       'resources/assets/static/tailwindcss.js',
