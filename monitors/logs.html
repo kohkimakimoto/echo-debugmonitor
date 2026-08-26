@@ -1,4 +1,4 @@
-<div x-data="logsMonitor({{.UsePolling}})" class="h-full flex flex-col" x-clock>
+<div x-data="logsMonitor({{.UsePolling}})" x-cloak class="h-full flex flex-col">
   <!-- Connection status indicator and controls -->
   <div class="px-4 py-2 bg-white dark:bg-gray-950 border-b dark:border-gray-700 border-gray-200 sticky top-0 left-0">
     <div class="space-y-2">
@@ -15,14 +15,24 @@
         </div>
         <button
           @click="toggleLiveUpdates()"
-          class="px-3 py-1 text-xs rounded transition-colors"
+          class="px-3 py-1 text-xs rounded transition-colors bg-blue-500 hover:bg-blue-600 text-white"
           :class="liveUpdatesEnabled ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200'"
         >
-          <span x-text="liveUpdatesEnabled ? 'Live Updates ON' : 'Live Updates OFF'"></span>
+          <span x-text="liveUpdatesEnabled ? 'Live Updates ON' : 'Live Updates OFF'">Live Updates ON</span>
         </button>
         <div class="flex items-center space-x-2">
-          <div :class="connected ? 'bg-green-500' : 'bg-red-500'" class="w-2 h-2 rounded-full"></div>
-          <span class="text-xs text-gray-500 dark:text-gray-400" x-text="connected ? 'Connected' : 'Disconnected'"></span>
+          <div
+            class="w-2 h-2 rounded-full bg-amber-400"
+            :class="{
+              'bg-green-500': connected === true,
+              'bg-red-500': connected === false,
+              'bg-amber-400': connected === null
+            }"
+          ></div>
+          <span
+            class="text-xs text-gray-500 dark:text-gray-400"
+            x-text="connected === true ? 'Connected' : connected === false ? 'Disconnected' : 'Connecting...'"
+          >Connecting...</span>
         </div>
       </div>
       <!-- Log level filters -->
@@ -126,7 +136,7 @@
     return {
       entries: [],
       lastId: '0',
-      connected: false,
+      connected: null,
       liveUpdatesEnabled: true,
       eventSource: null,
       pollingInterval: null,
@@ -288,6 +298,7 @@
           this.eventSource.close();
         }
 
+        this.connected = null;
         this.eventSource = new EventSource(`?monitor=${monitor}&action=stream&since=${this.lastId}`);
 
         this.eventSource.onopen = () => {
