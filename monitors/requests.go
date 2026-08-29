@@ -24,8 +24,8 @@ type RequestPayload struct {
 	Timestamp  time.Time         `json:"timestamp"`
 }
 
-// RequestsMonitorConfig defines the config for Requests monitor.
-type RequestsMonitorConfig struct {
+// RequestMonitorConfig defines the config for Request monitor.
+type RequestMonitorConfig struct {
 	// Skipper defines a function to skip middleware.
 	// Optional. Default: DefaultSkipper
 	Skipper middleware.Skipper
@@ -39,12 +39,12 @@ var requestsView string
 // requestsViewTemplate is the parsed template for the requests view
 var requestsViewTemplate = template.Must(template.New("requestsView").Parse(requestsView))
 
-// NewRequestsMonitor creates a new monitor for HTTP requests and returns
+// NewRequestMonitor creates a new monitor for HTTP requests and returns
 // the monitor along with an Echo middleware function that captures request information
-func NewRequestsMonitor(config *RequestsMonitorConfig) (*debugmonitor.Monitor, echo.MiddlewareFunc) {
+func NewRequestMonitor(config *RequestMonitorConfig) (*debugmonitor.Monitor, echo.MiddlewareFunc) {
 	// Defaults
 	if config == nil {
-		config = &RequestsMonitorConfig{}
+		config = &RequestMonitorConfig{}
 	}
 	if config.Skipper == nil {
 		config.Skipper = middleware.DefaultSkipper

@@ -29,15 +29,15 @@ var errorsViewTemplate = template.Must(template.New("errorsView").Parse(errorsVi
 // ErrorRecorder is a function type for recording errors
 type ErrorRecorder func(err error)
 
-// ErrorsMonitorConfig defines the config for Errors monitor.
-type ErrorsMonitorConfig struct {
+// ErrorMonitorConfig defines the config for Error monitor.
+type ErrorMonitorConfig struct {
 	// UsePolling enables polling mode instead of SSE for real-time updates.
 	UsePolling bool
 }
 
-// NewErrorsMonitor creates a new monitor for errors and returns
+// NewErrorMonitor creates a new monitor for errors and returns
 // the monitor along with an error recording function
-func NewErrorsMonitor(config ErrorsMonitorConfig) (*debugmonitor.Monitor, ErrorRecorder) {
+func NewErrorMonitor(config ErrorMonitorConfig) (*debugmonitor.Monitor, ErrorRecorder) {
 	m := &debugmonitor.Monitor{
 		Name:        "errors",
 		DisplayName: "Errors",

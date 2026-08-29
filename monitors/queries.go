@@ -30,8 +30,8 @@ var queriesView string
 // queriesViewTemplate is the parsed template for the queries view
 var queriesViewTemplate = template.Must(template.New("queriesView").Parse(queriesView))
 
-// QueriesMonitorConfig defines the config for Queries monitor.
-type QueriesMonitorConfig struct {
+// QueryMonitorConfig defines the config for Query monitor.
+type QueryMonitorConfig struct {
 	// DSN is the data source name for the database connection.
 	DSN string
 	// Driver is the database driver to wrap with monitoring.
@@ -40,10 +40,10 @@ type QueriesMonitorConfig struct {
 	UsePolling bool
 }
 
-// NewQueriesMonitor creates a new monitor for database queries and returns a wrapped *sql.DB.
+// NewQueryMonitor creates a new monitor for database queries and returns a wrapped *sql.DB.
 // This function wraps an existing database driver with monitoring capabilities without requiring
 // changes to existing *sql.DB usage code.
-func NewQueriesMonitor(config QueriesMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
+func NewQueryMonitor(config QueryMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
 	m := &debugmonitor.Monitor{
 		Name:        "queries",
 		DisplayName: "Queries",

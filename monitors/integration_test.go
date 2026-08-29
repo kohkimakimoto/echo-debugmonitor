@@ -13,10 +13,10 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func TestRequestsMonitorRecordsResponse(t *testing.T) {
+func TestRequestMonitorRecordsResponse(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, middleware := NewRequestsMonitor(nil)
+	monitor, middleware := NewRequestMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
 	e.GET("/created", func(c *echo.Context) error {
@@ -42,10 +42,10 @@ func TestRequestsMonitorRecordsResponse(t *testing.T) {
 	}
 }
 
-func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
+func TestRequestMonitorRecordsHTTPError(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, middleware := NewRequestsMonitor(nil)
+	monitor, middleware := NewRequestMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
 	e.GET("/teapot", func(c *echo.Context) error {
@@ -74,7 +74,7 @@ func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
 func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, recorder := NewErrorsMonitor(ErrorsMonitorConfig{})
+	monitor, recorder := NewErrorMonitor(ErrorMonitorConfig{})
 	manager.AddMonitor(monitor)
 	e.GET("/monitor", manager.Handler())
 
@@ -100,11 +100,11 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	}
 }
 
-func TestLogsMonitorRecordsMessage(t *testing.T) {
+func TestLogMonitorRecordsMessage(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
 	base := slog.New(slog.NewTextHandler(io.Discard, nil))
-	monitor, logger := NewLogsMonitor(LogsMonitorConfig{Logger: base})
+	monitor, logger := NewLogMonitor(LogMonitorConfig{Logger: base})
 	manager.AddMonitor(monitor)
 	e.GET("/monitor", manager.Handler())
 
@@ -119,11 +119,11 @@ func TestLogsMonitorRecordsMessage(t *testing.T) {
 	}
 }
 
-func TestLogsMonitorSkipper(t *testing.T) {
+func TestLogMonitorSkipper(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
 	base := slog.New(slog.NewTextHandler(io.Discard, nil))
-	monitor, logger := NewLogsMonitor(LogsMonitorConfig{
+	monitor, logger := NewLogMonitor(LogMonitorConfig{
 		Logger: base,
 		Skipper: func(r slog.Record) bool {
 			return r.Message == "REQUEST"

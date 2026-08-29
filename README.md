@@ -46,25 +46,25 @@ func main() {
     // Create the debug monitor manager
     m := debugmonitor.New()
 
-    // Add requests monitor
-    requestsMonitor, requestsMonitorMiddleware := monitors.NewRequestsMonitor(&monitors.RequestsMonitorConfig{
+    // Add request monitor
+    requestMonitor, requestMonitorMiddleware := monitors.NewRequestMonitor(&monitors.RequestMonitorConfig{
         Skipper: func(c *echo.Context) bool {
             return c.Path() == "/monitor" // Skip monitoring the monitor endpoint itself
         },
     })
-    e.Use(requestsMonitorMiddleware)
-    m.AddMonitor(requestsMonitor)
+    e.Use(requestMonitorMiddleware)
+    m.AddMonitor(requestMonitor)
 
-    // Add logs monitor (wraps *slog.Logger)
-    // Skip RequestLogger entries; use RequestsMonitor for access logs.
-    logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
+    // Add log monitor (wraps *slog.Logger)
+    // Skip RequestLogger entries; use RequestMonitor for access logs.
+    logMonitor, wrappedLogger := monitors.NewLogMonitor(monitors.LogMonitorConfig{
         Logger: e.Logger,
         Skipper: func(r slog.Record) bool {
             return r.Message == "REQUEST" || r.Message == "REQUEST_ERROR"
         },
     })
     e.Logger = wrappedLogger
-    m.AddMonitor(logsMonitor)
+    m.AddMonitor(logMonitor)
 
     // Register the dashboard route
     e.GET("/monitor", m.Handler())
@@ -97,11 +97,11 @@ You can also implement custom monitors for your specific needs.
 
 Echo Debug Monitor includes several ready-to-use monitors in the `github.com/kohkimakimoto/echo-debugmonitor/v5/monitors` package:
 
-- **Requests Monitor**: Tracks incoming HTTP requests, response statuses, latencies, etc.
-- **Logs Monitor**: Captures application logs via `log/slog` and displays them in real-time.
+- **Request Monitor**: Tracks incoming HTTP requests, response statuses, latencies, etc.
+- **Log Monitor**: Captures application logs via `log/slog` and displays them in real-time.
 - **Writer Monitor**: Monitors output written to `io.Writer` interfaces.
-- **Errors Monitor**: Records application errors and stack traces.
-- **Queries Monitor**: Tracks database queries.
+- **Error Monitor**: Records application errors and stack traces.
+- **Query Monitor**: Tracks database queries.
 
 ## Implementing Custom Monitors
 
