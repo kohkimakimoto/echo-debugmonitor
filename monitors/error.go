@@ -20,11 +20,11 @@ type ErrorPayload struct {
 	Timestamp  time.Time `json:"timestamp"`
 }
 
-//go:embed errors.html
-var errorsView string
+//go:embed error.html
+var errorView string
 
-// errorsViewTemplate is the parsed template for the errors view
-var errorsViewTemplate = template.Must(template.New("errorsView").Parse(errorsView))
+// errorViewTemplate is the parsed template for the error view
+var errorViewTemplate = template.Must(template.New("errorView").Parse(errorView))
 
 // ErrorRecorder is a function type for recording errors
 type ErrorRecorder func(err error)
@@ -39,14 +39,14 @@ type ErrorMonitorConfig struct {
 // the monitor along with an error recording function
 func NewErrorMonitor(config ErrorMonitorConfig) (*debugmonitor.Monitor, ErrorRecorder) {
 	m := &debugmonitor.Monitor{
-		Name:        "errors",
+		Name:        "error",
 		DisplayName: "Errors",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconExclamationCircle,
 		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return debugmonitor.RenderTemplate(c, errorsViewTemplate, map[string]any{
+				return debugmonitor.RenderTemplate(c, errorViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":

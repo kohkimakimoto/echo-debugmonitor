@@ -30,7 +30,7 @@ func TestRequestMonitorRecordsResponse(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, response.Code)
 	}
 
-	entries := readMonitorEntries[RequestPayload](t, e, "requests")
+	entries := readMonitorEntries[RequestPayload](t, e, "request")
 	if len(entries) != 1 {
 		t.Fatalf("expected one request entry, got %d", len(entries))
 	}
@@ -59,7 +59,7 @@ func TestRequestMonitorRecordsHTTPError(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusTeapot, response.Code)
 	}
 
-	entries := readMonitorEntries[RequestPayload](t, e, "requests")
+	entries := readMonitorEntries[RequestPayload](t, e, "request")
 	if len(entries) != 1 {
 		t.Fatalf("expected one request entry, got %d", len(entries))
 	}
@@ -91,7 +91,7 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	if !delegated {
 		t.Fatal("expected wrapped error handler to delegate")
 	}
-	entries := readMonitorEntries[ErrorPayload](t, e, "errors")
+	entries := readMonitorEntries[ErrorPayload](t, e, "error")
 	if len(entries) != 1 {
 		t.Fatalf("expected one error entry, got %d", len(entries))
 	}
@@ -110,7 +110,7 @@ func TestLogMonitorRecordsMessage(t *testing.T) {
 
 	logger.Info("server started")
 
-	entries := readMonitorEntries[LogPayload](t, e, "logs")
+	entries := readMonitorEntries[LogPayload](t, e, "log")
 	if len(entries) != 1 {
 		t.Fatalf("expected one log entry, got %d", len(entries))
 	}
@@ -135,7 +135,7 @@ func TestLogMonitorSkipper(t *testing.T) {
 	logger.Info("REQUEST")
 	logger.Info("app event")
 
-	entries := readMonitorEntries[LogPayload](t, e, "logs")
+	entries := readMonitorEntries[LogPayload](t, e, "log")
 	if len(entries) != 1 {
 		t.Fatalf("expected one log entry, got %d", len(entries))
 	}

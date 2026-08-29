@@ -27,7 +27,7 @@ func TestManagerHandlerWithoutMonitors(t *testing.T) {
 func TestManagerHandlerRedirectsToFirstMonitor(t *testing.T) {
 	e := echo.New()
 	manager := New()
-	manager.AddMonitor(&Monitor{Name: "requests", DisplayName: "Requests"})
+	manager.AddMonitor(&Monitor{Name: "request", DisplayName: "Requests"})
 	e.GET("/monitor", manager.Handler())
 
 	recorder := httptest.NewRecorder()
@@ -36,7 +36,7 @@ func TestManagerHandlerRedirectsToFirstMonitor(t *testing.T) {
 	if recorder.Code != http.StatusFound {
 		t.Fatalf("expected status %d, got %d", http.StatusFound, recorder.Code)
 	}
-	if location := recorder.Header().Get("Location"); location != "/monitor?monitor=requests" {
+	if location := recorder.Header().Get("Location"); location != "/monitor?monitor=request" {
 		t.Fatalf("expected monitor redirect, got %q", location)
 	}
 }

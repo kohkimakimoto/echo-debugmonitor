@@ -19,11 +19,11 @@ type LogPayload struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-//go:embed logs.html
-var logsView string
+//go:embed log.html
+var logView string
 
-// logsViewTemplate is the parsed template for the logs view
-var logsViewTemplate = template.Must(template.New("logsView").Parse(logsView))
+// logViewTemplate is the parsed template for the log view
+var logViewTemplate = template.Must(template.New("logView").Parse(logView))
 
 // LogSkipper defines a function to skip recording a log entry.
 // Return true to skip collecting the log into the monitor.
@@ -78,14 +78,14 @@ type LogMonitorConfig struct {
 // the monitor along with a wrapped slog.Logger.
 func NewLogMonitor(config LogMonitorConfig) (*debugmonitor.Monitor, *slog.Logger) {
 	m := &debugmonitor.Monitor{
-		Name:        "logs",
+		Name:        "log",
 		DisplayName: "Logs",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconDocumentText,
 		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return debugmonitor.RenderTemplate(c, logsViewTemplate, map[string]any{
+				return debugmonitor.RenderTemplate(c, logViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":

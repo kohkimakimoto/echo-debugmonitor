@@ -33,11 +33,11 @@ type RequestMonitorConfig struct {
 	UsePolling bool
 }
 
-//go:embed requests.html
-var requestsView string
+//go:embed request.html
+var requestView string
 
-// requestsViewTemplate is the parsed template for the requests view
-var requestsViewTemplate = template.Must(template.New("requestsView").Parse(requestsView))
+// requestViewTemplate is the parsed template for the request view
+var requestViewTemplate = template.Must(template.New("requestView").Parse(requestView))
 
 // NewRequestMonitor creates a new monitor for HTTP requests and returns
 // the monitor along with an Echo middleware function that captures request information
@@ -51,14 +51,14 @@ func NewRequestMonitor(config *RequestMonitorConfig) (*debugmonitor.Monitor, ech
 	}
 
 	m := &debugmonitor.Monitor{
-		Name:        "requests",
+		Name:        "request",
 		DisplayName: "Requests",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconGlobeAlt,
 		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return debugmonitor.RenderTemplate(c, requestsViewTemplate, map[string]any{
+				return debugmonitor.RenderTemplate(c, requestViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":

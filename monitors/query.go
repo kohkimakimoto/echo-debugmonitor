@@ -24,11 +24,11 @@ type QueryPayload struct {
 	Operation string        `json:"operation"` // Query, Exec, Prepare, Begin, Commit, Rollback
 }
 
-//go:embed queries.html
-var queriesView string
+//go:embed query.html
+var queryView string
 
-// queriesViewTemplate is the parsed template for the queries view
-var queriesViewTemplate = template.Must(template.New("queriesView").Parse(queriesView))
+// queryViewTemplate is the parsed template for the query view
+var queryViewTemplate = template.Must(template.New("queryView").Parse(queryView))
 
 // QueryMonitorConfig defines the config for Query monitor.
 type QueryMonitorConfig struct {
@@ -45,14 +45,14 @@ type QueryMonitorConfig struct {
 // changes to existing *sql.DB usage code.
 func NewQueryMonitor(config QueryMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
 	m := &debugmonitor.Monitor{
-		Name:        "queries",
+		Name:        "query",
 		DisplayName: "Queries",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconCircleStack,
 		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return debugmonitor.RenderTemplate(c, queriesViewTemplate, map[string]any{
+				return debugmonitor.RenderTemplate(c, queryViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":
