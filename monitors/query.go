@@ -24,14 +24,14 @@ type QueryPayload struct {
 	Operation string        `json:"operation"` // Query, Exec, Prepare, Begin, Commit, Rollback
 }
 
-//go:embed queries.html
-var queriesView string
+//go:embed query.html
+var queryView string
 
-// queriesViewTemplate is the parsed template for the queries view
-var queriesViewTemplate = template.Must(template.New("queriesView").Parse(queriesView))
+// queryViewTemplate is the parsed template for the query view
+var queryViewTemplate = template.Must(template.New("queryView").Parse(queryView))
 
-// QueriesMonitorConfig defines the config for Queries monitor.
-type QueriesMonitorConfig struct {
+// QueryMonitorConfig defines the config for Query monitor.
+type QueryMonitorConfig struct {
 	// DSN is the data source name for the database connection.
 	DSN string
 	// Driver is the database driver to wrap with monitoring.
@@ -40,19 +40,19 @@ type QueriesMonitorConfig struct {
 	UsePolling bool
 }
 
-// NewQueriesMonitor creates a new monitor for database queries and returns a wrapped *sql.DB.
+// NewQueryMonitor creates a new monitor for database queries and returns a wrapped *sql.DB.
 // This function wraps an existing database driver with monitoring capabilities without requiring
 // changes to existing *sql.DB usage code.
-func NewQueriesMonitor(config QueriesMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
+func NewQueryMonitor(config QueryMonitorConfig) (*debugmonitor.Monitor, *sql.DB) {
 	m := &debugmonitor.Monitor{
-		Name:        "queries",
+		Name:        "query",
 		DisplayName: "Queries",
 		MaxRecords:  1000,
 		Icon:        debugmonitor.IconCircleStack,
 		ActionHandler: func(c *echo.Context, store *debugmonitor.Store, action string) error {
 			switch action {
 			case "render":
-				return debugmonitor.RenderTemplate(c, queriesViewTemplate, map[string]any{
+				return debugmonitor.RenderTemplate(c, queryViewTemplate, map[string]any{
 					"UsePolling": config.UsePolling,
 				})
 			case "stream":

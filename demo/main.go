@@ -11,6 +11,7 @@ import (
 	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
 	"github.com/kohkimakimoto/echo-debugmonitor/v5/monitors"
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/pkg/errors"
 	_ "modernc.org/sqlite"
 )
@@ -18,30 +19,37 @@ import (
 func main() {
 	e := echo.New()
 
+	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
+
 	m := debugmonitor.New()
 
 	// ----------------------------------------------
-	// requests monitor
+	// request monitor
 	// ----------------------------------------------
-	requestsMonitor, requestsMonitorMiddleware := monitors.NewRequestsMonitor(&monitors.RequestsMonitorConfig{
+	requestMonitor, requestMonitorMiddleware := monitors.NewRequestMonitor(&monitors.RequestMonitorConfig{
 		Skipper: func(c *echo.Context) bool {
 			return c.Path() == "/monitor"
 		},
 	})
-	e.Use(requestsMonitorMiddleware)
-	m.AddMonitor(requestsMonitor)
+	e.Use(requestMonitorMiddleware)
+	m.AddMonitor(requestMonitor)
 
 	// ----------------------------------------------
-	// logs monitor
+	// log monitor
 	// ----------------------------------------------
-	logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
+	logMonitor, wrappedLogger := monitors.NewLogMonitor(monitors.LogMonitorConfig{
 		Logger: e.Logger,
+		// Skip RequestLogger entries; use RequestMonitor for access logs.
+		Skipper: func(r slog.Record) bool {
+			return r.Message == "REQUEST" || r.Message == "REQUEST_ERROR"
+		},
 	})
 	e.Logger = wrappedLogger
-	m.AddMonitor(logsMonitor)
+	m.AddMonitor(logMonitor)
 
 	// ----------------------------------------------
-	// queries monitor
+	// query monitor
 	// ----------------------------------------------
 	dsn := ":memory:"
 	db, err := sql.Open("sqlite", dsn)
@@ -51,20 +59,20 @@ func main() {
 	}
 	defer db.Close()
 
-	var queriesMonitor *debugmonitor.Monitor
-	queriesMonitor, db = monitors.NewQueriesMonitor(monitors.QueriesMonitorConfig{
+	var queryMonitor *debugmonitor.Monitor
+	queryMonitor, db = monitors.NewQueryMonitor(monitors.QueryMonitorConfig{
 		DSN:    dsn,
 		Driver: db.Driver(),
 	})
-	m.AddMonitor(queriesMonitor)
+	m.AddMonitor(queryMonitor)
 
 	initDB(db, e)
 
 	// ----------------------------------------------
-	// errors monitor
+	// error monitor
 	// ----------------------------------------------
-	errorsMonitor, errorRecorder := monitors.NewErrorsMonitor(monitors.ErrorsMonitorConfig{})
-	m.AddMonitor(errorsMonitor)
+	errorMonitor, errorRecorder := monitors.NewErrorMonitor(monitors.ErrorMonitorConfig{})
+	m.AddMonitor(errorMonitor)
 
 	e.HTTPErrorHandler = monitors.HTTPErrorHandlerWrapper(errorRecorder, e.HTTPErrorHandler)
 

@@ -13,10 +13,10 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-func TestRequestsMonitorRecordsResponse(t *testing.T) {
+func TestRequestMonitorRecordsResponse(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, middleware := NewRequestsMonitor(nil)
+	monitor, middleware := NewRequestMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
 	e.GET("/created", func(c *echo.Context) error {
@@ -30,7 +30,7 @@ func TestRequestsMonitorRecordsResponse(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusCreated, response.Code)
 	}
 
-	entries := readMonitorEntries[RequestPayload](t, e, "requests")
+	entries := readMonitorEntries[RequestPayload](t, e, "request")
 	if len(entries) != 1 {
 		t.Fatalf("expected one request entry, got %d", len(entries))
 	}
@@ -42,10 +42,10 @@ func TestRequestsMonitorRecordsResponse(t *testing.T) {
 	}
 }
 
-func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
+func TestRequestMonitorRecordsHTTPError(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, middleware := NewRequestsMonitor(nil)
+	monitor, middleware := NewRequestMonitor(nil)
 	manager.AddMonitor(monitor)
 	e.Use(middleware)
 	e.GET("/teapot", func(c *echo.Context) error {
@@ -59,7 +59,7 @@ func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusTeapot, response.Code)
 	}
 
-	entries := readMonitorEntries[RequestPayload](t, e, "requests")
+	entries := readMonitorEntries[RequestPayload](t, e, "request")
 	if len(entries) != 1 {
 		t.Fatalf("expected one request entry, got %d", len(entries))
 	}
@@ -74,7 +74,7 @@ func TestRequestsMonitorRecordsHTTPError(t *testing.T) {
 func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
-	monitor, recorder := NewErrorsMonitor(ErrorsMonitorConfig{})
+	monitor, recorder := NewErrorMonitor(ErrorMonitorConfig{})
 	manager.AddMonitor(monitor)
 	e.GET("/monitor", manager.Handler())
 
@@ -91,7 +91,7 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	if !delegated {
 		t.Fatal("expected wrapped error handler to delegate")
 	}
-	entries := readMonitorEntries[ErrorPayload](t, e, "errors")
+	entries := readMonitorEntries[ErrorPayload](t, e, "error")
 	if len(entries) != 1 {
 		t.Fatalf("expected one error entry, got %d", len(entries))
 	}
@@ -100,22 +100,47 @@ func TestHTTPErrorHandlerWrapperRecordsAndDelegates(t *testing.T) {
 	}
 }
 
-func TestLogsMonitorRecordsMessage(t *testing.T) {
+func TestLogMonitorRecordsMessage(t *testing.T) {
 	e := echo.New()
 	manager := debugmonitor.New()
 	base := slog.New(slog.NewTextHandler(io.Discard, nil))
-	monitor, logger := NewLogsMonitor(LogsMonitorConfig{Logger: base})
+	monitor, logger := NewLogMonitor(LogMonitorConfig{Logger: base})
 	manager.AddMonitor(monitor)
 	e.GET("/monitor", manager.Handler())
 
 	logger.Info("server started")
 
-	entries := readMonitorEntries[LogPayload](t, e, "logs")
+	entries := readMonitorEntries[LogPayload](t, e, "log")
 	if len(entries) != 1 {
 		t.Fatalf("expected one log entry, got %d", len(entries))
 	}
 	if entries[0].Payload.Level != "INFO" || entries[0].Payload.Message != "server started" {
 		t.Fatalf("unexpected log payload: %#v", entries[0].Payload)
+	}
+}
+
+func TestLogMonitorSkipper(t *testing.T) {
+	e := echo.New()
+	manager := debugmonitor.New()
+	base := slog.New(slog.NewTextHandler(io.Discard, nil))
+	monitor, logger := NewLogMonitor(LogMonitorConfig{
+		Logger: base,
+		Skipper: func(r slog.Record) bool {
+			return r.Message == "REQUEST"
+		},
+	})
+	manager.AddMonitor(monitor)
+	e.GET("/monitor", manager.Handler())
+
+	logger.Info("REQUEST")
+	logger.Info("app event")
+
+	entries := readMonitorEntries[LogPayload](t, e, "log")
+	if len(entries) != 1 {
+		t.Fatalf("expected one log entry, got %d", len(entries))
+	}
+	if entries[0].Payload.Message != "app event" {
+		t.Fatalf("expected app event, got %#v", entries[0].Payload)
 	}
 }
 
