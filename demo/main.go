@@ -11,12 +11,16 @@ import (
 	debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
 	"github.com/kohkimakimoto/echo-debugmonitor/v5/monitors"
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/pkg/errors"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
 	e := echo.New()
+
+	e.Use(middleware.RequestLogger())
+	e.Use(middleware.Recover())
 
 	m := debugmonitor.New()
 
@@ -36,6 +40,10 @@ func main() {
 	// ----------------------------------------------
 	logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
 		Logger: e.Logger,
+		// Skip RequestLogger entries; use RequestsMonitor for access logs.
+		Skipper: func(r slog.Record) bool {
+			return r.Message == "REQUEST" || r.Message == "REQUEST_ERROR"
+		},
 	})
 	e.Logger = wrappedLogger
 	m.AddMonitor(logsMonitor)

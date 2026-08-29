@@ -33,6 +33,8 @@ Here's a simple example to get started with Echo Debug Monitor:
 package main
 
 import (
+    "log/slog"
+
     "github.com/labstack/echo/v5"
     debugmonitor "github.com/kohkimakimoto/echo-debugmonitor/v5"
     "github.com/kohkimakimoto/echo-debugmonitor/v5/monitors"
@@ -54,8 +56,12 @@ func main() {
     m.AddMonitor(requestsMonitor)
 
     // Add logs monitor (wraps *slog.Logger)
+    // Skip RequestLogger entries; use RequestsMonitor for access logs.
     logsMonitor, wrappedLogger := monitors.NewLogsMonitor(monitors.LogsMonitorConfig{
         Logger: e.Logger,
+        Skipper: func(r slog.Record) bool {
+            return r.Message == "REQUEST" || r.Message == "REQUEST_ERROR"
+        },
     })
     e.Logger = wrappedLogger
     m.AddMonitor(logsMonitor)

@@ -119,6 +119,31 @@ func TestLogsMonitorRecordsMessage(t *testing.T) {
 	}
 }
 
+func TestLogsMonitorSkipper(t *testing.T) {
+	e := echo.New()
+	manager := debugmonitor.New()
+	base := slog.New(slog.NewTextHandler(io.Discard, nil))
+	monitor, logger := NewLogsMonitor(LogsMonitorConfig{
+		Logger: base,
+		Skipper: func(r slog.Record) bool {
+			return r.Message == "REQUEST"
+		},
+	})
+	manager.AddMonitor(monitor)
+	e.GET("/monitor", manager.Handler())
+
+	logger.Info("REQUEST")
+	logger.Info("app event")
+
+	entries := readMonitorEntries[LogPayload](t, e, "logs")
+	if len(entries) != 1 {
+		t.Fatalf("expected one log entry, got %d", len(entries))
+	}
+	if entries[0].Payload.Message != "app event" {
+		t.Fatalf("expected app event, got %#v", entries[0].Payload)
+	}
+}
+
 type monitorEntry[T any] struct {
 	ID      int64 `json:"id,string"`
 	Payload T     `json:"payload"`
